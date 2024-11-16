@@ -13,7 +13,7 @@ logging.basicConfig(
 def setup_paths():
     """Setup and return all necessary paths."""
     base_dir = Path.cwd().parent
-    modified_dir = base_dir / 'dataset' / 'modified'
+    modified_dir = base_dir / 'dataset'
     modified_dir.mkdir(exist_ok=True)
     
     return {
@@ -80,7 +80,8 @@ def cartesian_to_polar(df: pd.DataFrame) -> pd.DataFrame:
         # Assign results only to valid coordinates
         df.loc[valid_mask, "Polar.R"] = r
         df.loc[valid_mask, "Polar.Theta"] = theta
-    
+    columns_to_drop = [col for col in df.columns if col.startswith('Location')]
+    df.drop(columns=columns_to_drop, inplace=True, errors='ignore')
     return df
 
 def main():
@@ -92,12 +93,12 @@ def main():
         logging.info("Processing test dataset...")
         df_test = pd.read_csv(paths['test'], low_memory=False)
         df_test_processed = clean_dataframe(df_test)
-        df_test_processed.to_csv(paths['modified'] / 'test_clean.csv', index=False)
+        df_test_processed.to_csv(paths['modified'] / 'test.csv', index=False)
         
         logging.info("Processing train dataset...")
         df_train = pd.read_csv(paths['train'], low_memory=False)
         df_train_processed = clean_dataframe(df_train)
-        df_train_processed.to_csv(paths['modified'] / 'train_clean.csv', index=False)
+        df_train_processed.to_csv(paths['modified'] / 'train.csv', index=False)
         
         logging.info("Modified datasets have been saved successfully.")
         

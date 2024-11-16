@@ -1,0 +1,15 @@
+artifact_uri: file:///home/jgomacor/projects/Dream_Team_2024/analysis/training/mlruns/993656704908748596/964fb6f32d84422ca0d3d2190a594b42/artifacts
+end_time: 1731772022657
+entry_point_name: ''
+experiment_id: '993656704908748596'
+lifecycle_stage: active
+run_id: 964fb6f32d84422ca0d3d2190a594b42
+run_name: lightgbm
+run_uuid: 964fb6f32d84422ca0d3d2190a594b42
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1731772020104
+status: 3
+tags: []
+user_id: jgomacor

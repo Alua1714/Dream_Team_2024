@@ -1,0 +1,15 @@
+artifact_uri: file:///home/jgomacor/projects/Dream_Team_2024/analysis/training/mlruns/993656704908748596/94ae014a717d434faa1f5bd8bef46bcd/artifacts
+end_time: 1731772020102
+entry_point_name: ''
+experiment_id: '993656704908748596'
+lifecycle_stage: active
+run_id: 94ae014a717d434faa1f5bd8bef46bcd
+run_name: sklearn_rf
+run_uuid: 94ae014a717d434faa1f5bd8bef46bcd
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1731772004741
+status: 3
+tags: []
+user_id: jgomacor

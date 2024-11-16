@@ -14,6 +14,7 @@ train_file = os.path.abspath(os.path.join(parent_dir, 'train.csv'))
 df_test = pd.read_csv(test_file, sep=',', low_memory=False)
 df_train = pd.read_csv(train_file, sep=',', low_memory=False)
 
+
 dataframes = [(df_train, 'df_train'), (df_test, 'df_test')]
 
 def convert_columns_to_int(df):
@@ -31,7 +32,10 @@ def convert_columns_to_int(df):
     return df
 
 for df, df_name in dataframes:
-    df = convert_columns_to_int(df)
+    columns_to_keep = ['Location.GIS.Longitude', 'Location.GIS.Latitude']
+    location_columns = [col for col in df.columns if col.startswith('Location')]
+    columns_to_drop = [col for col in location_columns if col not in columns_to_keep]
+    df = df.drop(columns=columns_to_drop)
 
 # Function to convert string representations to actual lists
 def string_to_list(input_string):

@@ -55,12 +55,7 @@ def extract_and_convert_to_float(input_string):
         # Return None if conversion fails or input is not a string
         return None
 
-def get_bool(element):
-    if element == "FALSE":
-        return np.bool(False)
-    elif element == "TRUE":
-        return np.bool(True)
-    return element
+
 # Main logic
 
 
@@ -95,7 +90,7 @@ for df, df_name in dataframes:
     df.drop(columns=one_hot, inplace=True, errors='ignore')
     df.drop(columns=columns_to_list_one_hot, inplace=True, errors='ignore')
 
-    df["Structure.NewConstructionYN"] = df["Structure.NewConstructionYN"].apply(get_bool)
+    df["Structure.NewConstructionYN"] = df["Structure.NewConstructionYN"].astype(bool)
     # Convert columns to lists and apply one-hot encoding
     name = "ImageData.style.stories.summary.label"
     df[name] = df[name].apply(extract_and_convert_to_float)

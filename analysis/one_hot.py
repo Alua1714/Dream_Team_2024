@@ -33,7 +33,7 @@ def preprocess_dataframe(df, config):
         if col in df.columns:
             df[col] = df[col].apply(string_to_list)
             df = one_hot_from_list(df, col)
-
+        df.drop(columns=col, inplace=True, errors='ignore')
     return df
 
 def main():

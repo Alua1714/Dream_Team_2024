@@ -22,13 +22,6 @@
         },
         body: formData
       });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const result = await response.json();
-      console.log('Upload successful:', result);
       // success
     } catch (error) {
       // error

@@ -5,23 +5,39 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from joblib import dump, load
+from datetime import datetime
 import mlflow
 import mlflow.sklearn
 import mlflow.lightgbm
+import os
+
+
 
 from sklearn.datasets import fetch_california_housing # ONLY TESTING
+
+
+# Get the parent directory of the current working directory and append 'dataset'
+parent_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
+
+# Construct the paths for 'test.csv' and 'train.csv'
+test_file = os.path.abspath(os.path.join(parent_dir, 'df_test.csv'))
+train_file = os.path.abspath(os.path.join(parent_dir, 'df_train.csv'))
+
+def get_column_types(df):
+    return df.dtypes
 
 # Set MLflow experiment
 mlflow.set_experiment("house_price_prediction")
 
 def load_data(data_path):
     """Load and preprocess the dataset"""
-    # df = pd.read_csv(data_path)
-
-    df =  fetch_california_housing(as_frame=True).frame # ONLY TESTING
+    df = pd.read_csv(data_path)
+    print(get_column_types(df))
+    # df =  fetch_california_housing(as_frame=True).frame # ONLY TESTING
     # Assuming your target variable is named 'price'
-    X = df.drop('MedHouseVal', axis=1)
-    y = df['MedHouseVal']
+    X = df.drop('Listing.Price.ClosePrice', axis=1)
+    y = df['Listing.Price.ClosePrice']
     
     # Handle categorical variables (if any)
     X = pd.get_dummies(X, drop_first=True)
@@ -84,7 +100,7 @@ def train_lightgbm(X_train, X_test, y_train, y_test, params):
 
 # Example usage in notebook cells:
 # Cell 1: Load data
-X_train, X_test, y_train, y_test = load_data("your_data.csv")
+X_train, X_test, y_train, y_test = load_data(train_file)
 
 # Cell 2: Define parameters for each model
 sklearn_params = {
@@ -101,12 +117,6 @@ lightgbm_params = {
     "num_leaves": 31,
     "random_state": 42
 }
-
-# Cell 3: Train sklearn Random Forest
-sklearn_model, sklearn_metrics = train_sklearn_rf(
-    X_train, X_test, y_train, y_test, sklearn_params
-)
-print("Sklearn RF Metrics:", sklearn_metrics)
 
 # Cell 4: Train LightGBM
 lightgbm_model, lightgbm_metrics = train_lightgbm(

@@ -71,3 +71,21 @@ for df, df_name in dataframes:
     for col in columns_to_one_hot:
         df[col] = df[col].apply(string_to_list)  # Convert strings to lists
         df = one_hot_from_list(df, col)  # Apply one-hot encoding
+
+def get_column_types(df):
+    return df.dtypes
+
+def get_unique_types(df):
+    return set(df.dtypes)
+
+def save_dataset(df, filename):
+    df.to_csv(filename, index=False)
+    print(f"Dataset saved to {filename}")
+    
+for df, df_name in dataframes:
+    print(len(df.columns.tolist()))
+    #print(get_column_types(df))
+    print(get_unique_types(df))
+    #print(df["ImageData.style.stories.summary.label"])
+    p = os.path.abspath(os.path.join(parent_dir, f'{df_name}.csv'))
+    save_dataset(df, p)

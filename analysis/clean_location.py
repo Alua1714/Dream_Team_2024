@@ -1,7 +1,5 @@
 import pandas as pd
-import os
-import requests
-from dotenv import load_dotenv
+import numpy as np
 from pathlib import Path
 import logging
 
@@ -43,7 +41,32 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[normal_mask, "Location.GIS.Latitude"] = 40.529155234759784
     df.loc[normal_mask, "Location.GIS.Longitude"] = -89.00127842461578
     
+    return cartesian_to_polar(df)
+
+
+def cartesian_to_polar(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert latitude/longitude to polar coordinates (r, theta)."""
+    df = df.copy()
+    
+    # Convert to radians
+    lat_rad = np.radians(df["Location.GIS.Latitude"])
+    lon_rad = np.radians(df["Location.GIS.Longitude"])
+    
+    # Calculate r (distance from origin)
+    # Using Earth's radius in kilometers (6371 km)
+    R = 6371
+    r = R * np.arccos(np.sin(lat_rad) * np.sin(0) + 
+                     np.cos(lat_rad) * np.cos(0) * np.cos(lon_rad - 0))
+    
+    # Calculate theta (angle from reference direction)
+    theta = np.arctan2(lon_rad, lat_rad)
+    
+    # Add new columns
+    df["Polar.R"] = r
+    df["Polar.Theta"] = np.degrees(theta)  # Convert back to degrees
+    
     return df
+
 
 def main():
     # Setup paths

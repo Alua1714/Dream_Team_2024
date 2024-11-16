@@ -189,15 +189,30 @@ class HousePricePredictor:
         self.evaluator = ModelEvaluator()
         self.cv = TimeSeriesCV()
         
-        # Set up MLflow tracking URI (add this line)
-        mlflow.set_tracking_uri("file:./mlruns")
+        # Set up MLflow tracking
+        mlflow_dir = os.path.abspath("mlruns")
+        if not os.path.exists(mlflow_dir):
+            os.makedirs(mlflow_dir)
+            
+        # Set the tracking URI to the absolute path
+        mlflow.set_tracking_uri(f"file:{mlflow_dir}")
         
-        # Create or set experiment
-        try:
-            mlflow.create_experiment(experiment_name)
-        except Exception:
-            pass
+        # Get or create experiment
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        if experiment is None:
+            experiment_id = mlflow.create_experiment(
+                experiment_name,
+                artifact_location=os.path.join(mlflow_dir, experiment_name)
+            )
+        else:
+            experiment_id = experiment.experiment_id
+            
         mlflow.set_experiment(experiment_name)
+        
+        print(f"\nMLflow Configuration:")
+        print(f"Tracking URI: {mlflow.get_tracking_uri()}")
+        print(f"Experiment Name: {experiment_name}")
+        print(f"Experiment ID: {experiment_id}")
 
     def prepare_data(self, data_path: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """Load and preprocess data"""
@@ -318,6 +333,15 @@ class HousePricePredictor:
         return results
 
 def main():
+    # Clear existing mlruns directory if it exists (optional, remove if you want to keep history)
+    mlruns_dir = "mlruns"
+    if os.path.exists(mlruns_dir):
+        import shutil
+        shutil.rmtree(mlruns_dir)
+    
+    # Create fresh mlruns directory
+    os.makedirs(mlruns_dir)
+    
     parent_dir = os.path.abspath(os.path.join(os.getcwd(), 'dataset'))
     train_file = os.path.abspath(os.path.join(parent_dir, 'df_train.csv'))
     
@@ -330,11 +354,12 @@ def main():
         "min_child_samples": 20,
         "min_split_gain": 0.1,
         "random_state": 42,
+        "verbose": -1
     }
     model = LightGBMModel(lgb_params)
     
-    # Initialize predictor
-    predictor = HousePricePredictor(model)
+    # Initialize predictor with experiment name
+    predictor = HousePricePredictor(model, "house_price_experiment")
     predictor.cv = TimeSeriesCV(min_training_months=3, forecast_months=1)
     
     # Print starting message
@@ -356,5 +381,10 @@ def main():
     # Train and evaluate
     results = predictor.train_and_evaluate(X_train, y_train)
 
-if __name__ == '__main__':
+    predictor.persistence.save_model(model)
+
+    print("\nMLflow UI can be started with:")
+    print("mlflow ui --backend-store-uri file:./mlruns")
+
+if __name__ == "__main__":
     main()

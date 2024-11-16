@@ -149,48 +149,37 @@ class HybridImputer:
         self.fit(X, columns_to_impute)
         return self.transform(X)
     
-# Create sample data
-data = pd.DataFrame({
-    'age': [25, 30, np.nan, 45, 35],
-    'income': [50000, np.nan, 75000, 60000, 80000],
-    'education': ['Bachelor', 'Master', np.nan, 'PhD', 'Bachelor'],
-    'occupation': ['Engineer', 'Manager', 'Developer', np.nan, 'Analyst']
-})
-
 
 parent_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
-test_file = os.path.abspath(os.path.join(parent_dir, 'test.csv'))
-train_file = os.path.abspath(os.path.join(parent_dir, 'train.csv'))
+test_file = os.path.abspath(os.path.join(parent_dir, 'df_del_test.csv'))
+train_file = os.path.abspath(os.path.join(parent_dir, 'df_del_train.csv'))
 
 df_test = pd.read_csv(test_file, sep=',', low_memory=False)
 df_train = pd.read_csv(train_file, sep=',', low_memory=False)
 train_size = len(df_train)
 test_size = len(df_test)
 
-df_combined = pd.concat([df_train, df_test], axis=1)
-"""
-categorical_col=['ImageData.features_reso.results', 'ImageData.room_type_reso.results', 
-          'ImageData.style.exterior.summary.label', 'ImageData.style.stories.summary.label',
-          'Listing.Dates.CloseDate', 'Listing.ListingId', 'Property.PropertyType',
-          'Structure.Basement', 'Structure.Cooling', 'Structure.Heating', 'Structure.NewConstructionYN', 
-          'Structure.ParkingFeatures', 'Tax.Zoning', 'UnitTypes.UnitTypeType']
-# Initialize imputer
-"""
-categorical_columns = df_combined.select_dtypes(include=['category', 'object']).columns.tolist()
+df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
+columns_to_one_hot = ["Characteristics.LotFeatures","Listing.Dates.CloseDate"]
+df_combined.drop(columns=columns_to_one_hot, inplace=True, errors='ignore')
+
 
 #df_combined.to_csv('df_combined.csv', index=False)
 
 imputer = HybridImputer(
-    categorical_features=categorical_columns,
+    categorical_features=None,
     n_estimators=100,
     n_neighbors=3
 )
 
 # Impute missing values
-imputed_data = imputer.fit_transform(df_combined, columns_to_impute=[''])
-
+cols_impute = list(df_combined.columns)
+imputed_data = imputer.fit_transform(df_combined, columns_to_impute=cols_impute)
 df_train_recovered = imputed_data.iloc[:train_size, :].reset_index(drop=True)
 df_test_recovered = imputed_data.iloc[train_size:, :].reset_index(drop=True)
 
-df_train_recovered.to_csv('train_imputed.csv', index=False)
-df_test_recovered.to_csv('test_imputed.csv', index=False)
+output_path_train = os.path.abspath(os.path.join(parent_dir, f'train_imputed.csv'))
+output_path_test = os.path.abspath(os.path.join(parent_dir, f'train_imputed.csv'))
+
+df_train_recovered.to_csv(output_path_train, index=False)
+df_test_recovered.to_csv(output_path_test, index=False)

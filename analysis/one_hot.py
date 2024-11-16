@@ -39,8 +39,8 @@ def preprocess_dataframe(df, config):
 def main():
     """Main execution function."""
     parent_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
-    test_file = os.path.abspath(os.path.join(parent_dir, 'df_test.csv'))
-    train_file = os.path.abspath(os.path.join(parent_dir, 'df_train.csv'))
+    test_file = os.path.abspath(os.path.join(parent_dir, 'df_del_test.csv'))
+    train_file = os.path.abspath(os.path.join(parent_dir, 'df_del_train.csv'))
 
     df_test = pd.read_csv(test_file, sep=',', low_memory=False)
     df_train = pd.read_csv(train_file, sep=',', low_memory=False)

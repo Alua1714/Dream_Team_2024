@@ -70,7 +70,7 @@ def main():
     df_test = pd.read_csv(test_file, sep=',', low_memory=False)
     df_train = pd.read_csv(train_file, sep=',', low_memory=False)
 
-    dataframes = [(df_train, 'df_train'), (df_test, 'df_test')]
+    dataframes = [(df_train, 'df_del_train'), (df_test, 'df_del_test')]
 
     config = {
         'columns_to_drop': [

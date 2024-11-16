@@ -1,0 +1,16 @@
+mlflow
+tensorflow
+shap
+numpy
+matplotlib
+scikit-learn
+pandas
+numpy
+matplotlib
+notebook
+ipykernel
+ipywidgets 
+lightgbm
+shap 
+optuna
+

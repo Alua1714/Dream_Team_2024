@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.js";
+  import FileSubmitForm from "$lib/components/FileSubmitForm.svelte";
 </script>
+
+<div class="flex items-center justify-center h-[600px]">
+  <FileSubmitForm />
+</div>
  
-<Button>Click me</Button>

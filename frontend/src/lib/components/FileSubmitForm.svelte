@@ -22,12 +22,20 @@
         },
         body: formData
       });
+
+      console.log(response);
       // success
     } catch (error) {
       // error
     } finally {
       formLoading = false;
     }
+  }
+
+  function handleCancel(event: Event) {
+    event.preventDefault();
+    files = null;
+    formLoading = false;
   }
 </script>
 
@@ -49,7 +57,7 @@
       </div>
   </Card.Content>
   <Card.Footer class="flex justify-between">
-    <Button variant="outline">Cancel</Button>
+    <Button variant="outline" onclick={handleCancel}>Cancel</Button>
     <Button type="submit" class="w-full" disabled={formLoading}>
       {#if formLoading}
         <LoaderCircle class="h-5 animate-spin" />

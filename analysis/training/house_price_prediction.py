@@ -14,6 +14,8 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple, List, Optional, Any
 import matplotlib as plt
+import time
+
 
 class BaseModel(ABC):
     """Abstract base class for all models in the framework"""
@@ -299,6 +301,11 @@ class HousePricePredictor:
                     'true_values': y_val_fold.tolist(),
                     'predictions': val_pred.tolist()
                 })
+
+                if fold == 8:
+                    print('Getting rellevant features...')
+                    self.get_rellevant_features(X_val_fold)
+
             
             # Calculate and print average metrics
             avg_metrics = {
@@ -331,17 +338,51 @@ class HousePricePredictor:
                 print(f"Warning: Failed to log average metrics to MLflow: {str(e)}")
         
         return results
+    
+    def get_rellevant_features(self, X_test, random_state = 4):
+        # Extracting feature importances from the model (if available)
+        model = self.model
+        feature_names = list(X_test.columns)
+
+        # Checking if the model has feature_importances_ or coefficients
+        if hasattr(model, 'feature_importances_'):
+            importances = model.feature_importances_
+        elif hasattr(model, 'coef_'):
+            importances = np.abs(model.coef_)
+        else:
+            importances = None
+            print("The model does not have 'feature_importances_' or 'coef_' attributes")
+
+        if importances is not None:
+            # Creating a DataFrame for feature importances
+            feat_imp_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances}).sort_values(by='Importance', ascending=False)
+            
+            # Saving and logging feature importances as CSV
+            feat_imp_csv = 'feature_importance.csv'
+            feat_imp_df.to_csv(feat_imp_csv, index=False)
+            mlflow.log_artifact(feat_imp_csv)
+
+            # Plotting and saving feature importances
+            plt.figure(figsize=(10, 6))
+            plt.barh(feat_imp_df['Feature'], feat_imp_df['Importance'])
+            plt.gca().invert_yaxis()
+            plt.xlabel('Importance')
+            plt.title('Feature Importances')
+            plt.tight_layout()
+            
+            # Saving and log the plot
+            feat_imp_png = 'feature_importance.png'
+            plt.savefig(feat_imp_png)
+            plt.close()
+            mlflow.log_artifact(feat_imp_png)
 
 def main():
     # Clear existing mlruns directory if it exists (optional, remove if you want to keep history)
+
     mlruns_dir = "mlruns"
-    if os.path.exists(mlruns_dir):
-        import shutil
-        shutil.rmtree(mlruns_dir)
-    
-    # Create fresh mlruns directory
-    os.makedirs(mlruns_dir)
-    
+    if not os.path.exists(mlruns_dir):
+        os.makedirs(mlruns_dir)
+
     parent_dir = os.path.abspath(os.path.join(os.getcwd(), 'dataset'))
     train_file = os.path.abspath(os.path.join(parent_dir, 'df_train.csv'))
     

@@ -13,7 +13,9 @@
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^4.0.0",
 		"autoprefixer": "^10.4.20",
+		"bits-ui": "^1.0.0-next.58",
 		"clsx": "^2.1.1",
+		"lucide-svelte": "^0.460.1",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"tailwind-merge": "^2.5.4",
@@ -24,6 +26,7 @@
 		"vite": "^5.0.3"
 	},
 	"dependencies": {
-		"@sveltejs/adapter-node": "^5.2.9"
+		"@sveltejs/adapter-node": "^5.2.9",
+		"mode-watcher": "^0.4.1"
 	}
 }

@@ -8,6 +8,8 @@ RUN npm ci
 
 COPY frontend ./
 
+ARG VITE_API_ENDPOINT=${VITE_API_ENDPOINT}
+
 RUN npm run build
 
 FROM node:alpine

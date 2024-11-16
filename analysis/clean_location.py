@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import logging
+import math
 
 # Configure logging
 logging.basicConfig(
@@ -48,25 +49,39 @@ def cartesian_to_polar(df: pd.DataFrame) -> pd.DataFrame:
     """Convert latitude/longitude to polar coordinates (r, theta)."""
     df = df.copy()
     
-    # Convert to radians
-    lat_rad = np.radians(df["Location.GIS.Latitude"])
-    lon_rad = np.radians(df["Location.GIS.Longitude"])
+    CENTER_LAT = 41.87698087663472
+    CENTER_LON = -87.63402335655448
+    R = 6371000
+
+    # Initialize columns with NaN
+    df["Polar.R"] = np.nan
+    df["Polar.Theta"] = np.nan
+
+    # Get mask for valid coordinates
+    valid_mask = df["Location.GIS.Latitude"].notna() & df["Location.GIS.Longitude"].notna()
     
-    # Calculate r (distance from origin)
-    # Using Earth's radius in kilometers (6371 km)
-    R = 6371
-    r = R * np.arccos(np.sin(lat_rad) * np.sin(0) + 
-                     np.cos(lat_rad) * np.cos(0) * np.cos(lon_rad - 0))
-    
-    # Calculate theta (angle from reference direction)
-    theta = np.arctan2(lon_rad, lat_rad)
-    
-    # Add new columns
-    df["Polar.R"] = r
-    df["Polar.Theta"] = np.degrees(theta)  # Convert back to degrees
+    # Only process valid coordinates
+    if valid_mask.any():
+        lat = np.radians(df.loc[valid_mask, "Location.GIS.Latitude"])
+        lon = np.radians(df.loc[valid_mask, "Location.GIS.Longitude"])
+        center_lat = np.radians(CENTER_LAT)
+        center_lon = np.radians(CENTER_LON)
+        
+        # Calculate distance (r) using Haversine formula
+        dlat = lat - center_lat
+        dlon = lon - center_lon
+        x = R * dlon * np.cos((lat + center_lat) / 2)  # Adjust for latitude distortion
+        y = R * dlat
+
+        # Calculate bearing (θ)
+        r = np.sqrt(x**2 + y**2)
+        theta = np.arctan2(y, x)
+
+        # Assign results only to valid coordinates
+        df.loc[valid_mask, "Polar.R"] = r
+        df.loc[valid_mask, "Polar.Theta"] = theta
     
     return df
-
 
 def main():
     # Setup paths

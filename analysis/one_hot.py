@@ -44,7 +44,26 @@ def save_dataset(df, filename):
     df.to_csv(filename, index=False)
     print(f"Dataset saved to {filename}")
 
+
+def extract_and_convert_to_float(input_string):
+    try:
+        # Split the string at the first underscore and take the first part
+        substring = input_string.split('_')[0]
+        # Convert the extracted substring to float
+        return np.float32(substring)
+    except (ValueError, AttributeError):
+        # Return None if conversion fails or input is not a string
+        return None
+
+def get_bool(element):
+    if element == "FALSE":
+        return np.bool(False)
+    elif element == "TRUE":
+        return np.bool(True)
+    return element
 # Main logic
+
+
 parent_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
 test_file = os.path.abspath(os.path.join(parent_dir, 'test.csv'))
 train_file = os.path.abspath(os.path.join(parent_dir, 'train.csv'))
@@ -54,22 +73,40 @@ df_train = pd.read_csv(train_file, sep=',', low_memory=False)
 
 dataframes = [(df_train, 'df_train'), (df_test, 'df_test')]
 columns_to_keep = ['Location.GIS.Longitude', 'Location.GIS.Latitude']
-columns_to_one_hot = ["Characteristics.LotFeatures"]
+columns_to_list_one_hot = ["Characteristics.LotFeatures"]
+columns_to_list_one_hot_not = ["ImageData.features_reso.results","ImageData.room_type_reso.results",
+                          "ImageData.style.exterior.summary.label","Structure.Basement",
+                          "Structure.Cooling","Structure.Heating","Structure.ParkingFeatures",
+                          "UnitTypes.UnitTypeType"]
+
+full_droped = ["Listing.ListingId"]
+one_hot = ["Property.PropertyType","Tax.Zoning"]
 
 for df, df_name in dataframes:
     # Drop unnecessary columns
     location_columns = [col for col in df.columns if col.startswith('Location')]
     columns_to_drop = [col for col in location_columns if col not in columns_to_keep]
-    df.drop(columns=columns_to_drop, inplace=True, errors='ignore')
+    df["Listing.Dates.CloseDate"] = pd.to_datetime(df["Listing.Dates.CloseDate"],
+                                format="%Y-%m-%dT%H:%M:%S", errors='coerce')
 
+    df.drop(columns=columns_to_drop, inplace=True, errors='ignore')
+    df.drop(columns=columns_to_list_one_hot_not, inplace=True, errors='ignore')
+    df.drop(columns=full_droped, inplace=True, errors='ignore')
+    df.drop(columns=one_hot, inplace=True, errors='ignore')
+    df.drop(columns=columns_to_list_one_hot, inplace=True, errors='ignore')
+
+    df["Structure.NewConstructionYN"] = df["Structure.NewConstructionYN"].apply(get_bool)
     # Convert columns to lists and apply one-hot encoding
-    for col in columns_to_one_hot:
+    name = "ImageData.style.stories.summary.label"
+    df[name] = df[name].apply(extract_and_convert_to_float)
+    for col in columns_to_list_one_hot:
         if col in df.columns:
             df[col] = df[col].apply(string_to_list)
             df = one_hot_from_list(df, col)
+
 
     # Save the updated DataFrame
     output_path = os.path.abspath(os.path.join(parent_dir, f'{df_name}.csv'))
     save_dataset(df, output_path)
 
-    print(f"Processed columns for {df_name}: {list(df.columns)}")
+    #print(f"Processed columns for {df_name}: {list(df.columns)}")

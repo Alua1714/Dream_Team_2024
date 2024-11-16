@@ -4,18 +4,6 @@ import os
 import ast
 from pathlib import Path
 
-def convert_columns_to_int(df):
-    """Converts columns to integers if possible, otherwise tries to convert to float."""
-    for col in df.columns:
-        try:
-            df[col] = df[col].astype(np.int64)
-        except ValueError:
-            try:
-                df[col] = df[col].astype(np.float32)
-            except Exception:
-                pass
-    return df
-
 def string_to_list(input_string):
     """Converts a string representation of a list into an actual list."""
     if isinstance(input_string, str):
@@ -40,25 +28,6 @@ def save_dataset(df, filename):
     print(f"Dataset saved to {filename}")
 
 def preprocess_dataframe(df, config):
-    """Applies a series of preprocessing steps to the DataFrame."""
-    # Drop unnecessary columns
-    df.drop(columns=config['columns_to_drop'], inplace=True, errors='ignore')
-
-    # Convert date columns
-    for col in config['date_columns']:
-        if col in df.columns:
-            df[col] = pd.to_datetime(df[col], format="%Y-%m-%dT%H:%M:%S", errors='coerce')
-
-    # Convert boolean columns
-    for col in config['boolean_columns']:
-        if col in df.columns:
-            df[col] = df[col].astype(bool)
-
-    # Convert specific columns to float
-    for col in config['float_conversion_columns']:
-        if col in df.columns:
-            df[col] = df[col].apply(extract_and_convert_to_float)
-
     # Apply one-hot encoding
     for col in config['columns_to_one_hot']:
         if col in df.columns:
@@ -67,19 +36,11 @@ def preprocess_dataframe(df, config):
 
     return df
 
-def extract_and_convert_to_float(input_string):
-    """Extracts a substring and converts it to float."""
-    try:
-        substring = input_string.split('_')[0]
-        return np.float32(substring)
-    except (ValueError, AttributeError):
-        return None
-
 def main():
     """Main execution function."""
     parent_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
-    test_file = os.path.abspath(os.path.join(parent_dir, 'test.csv'))
-    train_file = os.path.abspath(os.path.join(parent_dir, 'train.csv'))
+    test_file = os.path.abspath(os.path.join(parent_dir, 'df_test.csv'))
+    train_file = os.path.abspath(os.path.join(parent_dir, 'df_train.csv'))
 
     df_test = pd.read_csv(test_file, sep=',', low_memory=False)
     df_train = pd.read_csv(train_file, sep=',', low_memory=False)
@@ -87,16 +48,6 @@ def main():
     dataframes = [(df_train, 'df_train'), (df_test, 'df_test')]
 
     config = {
-        'columns_to_drop': [
-            "ImageData.features_reso.results", "ImageData.room_type_reso.results",
-            "ImageData.style.exterior.summary.label", "Structure.Basement",
-            "Structure.Cooling", "Structure.Heating", "Structure.ParkingFeatures",
-            "UnitTypes.UnitTypeType", "Listing.ListingId", "Property.PropertyType",
-            "Tax.Zoning", "Characteristics.LotFeatures",
-        ],
-        'date_columns': ["Listing.Dates.CloseDate"],
-        'boolean_columns': ["Structure.NewConstructionYN"],
-        'float_conversion_columns': ["ImageData.style.stories.summary.label"],
         'columns_to_one_hot': ["Characteristics.LotFeatures"]
     }
 

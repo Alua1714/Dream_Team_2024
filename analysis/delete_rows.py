@@ -25,15 +25,6 @@ def string_to_list(input_string):
             return []
     return input_string
 
-def one_hot_from_list(df, column_name):
-    """Creates one-hot encoding for elements in a column of lists."""
-    df[column_name] = df[column_name].apply(lambda x: x if isinstance(x, list) else [])
-    unique_elements = set(element for lst in df[column_name] for element in lst)
-    for element in unique_elements:
-        one_hot_col_name = f"one_hot_{element}"
-        df[one_hot_col_name] = df[column_name].apply(lambda lst: 1 if element in lst else 0)
-    return df
-
 def save_dataset(df, filename):
     """Saves the DataFrame to a CSV file."""
     df.to_csv(filename, index=False)
@@ -42,7 +33,8 @@ def save_dataset(df, filename):
 def preprocess_dataframe(df, config):
     """Applies a series of preprocessing steps to the DataFrame."""
     # Drop unnecessary columns
-    df.drop(columns=config['columns_to_drop'], inplace=True, errors='ignore')
+    col_drop = [col for col in config['columns_to_drop'] if col not in config["columns_to_one_hot"]]
+    df.drop(columns=col_drop, inplace=True, errors='ignore')
 
     # Convert date columns
     for col in config['date_columns']:
@@ -58,12 +50,6 @@ def preprocess_dataframe(df, config):
     for col in config['float_conversion_columns']:
         if col in df.columns:
             df[col] = df[col].apply(extract_and_convert_to_float)
-
-    # Apply one-hot encoding
-    for col in config['columns_to_one_hot']:
-        if col in df.columns:
-            df[col] = df[col].apply(string_to_list)
-            df = one_hot_from_list(df, col)
 
     return df
 
@@ -92,7 +78,7 @@ def main():
             "ImageData.style.exterior.summary.label", "Structure.Basement",
             "Structure.Cooling", "Structure.Heating", "Structure.ParkingFeatures",
             "UnitTypes.UnitTypeType", "Listing.ListingId", "Property.PropertyType",
-            "Tax.Zoning", "Characteristics.LotFeatures",
+            "Tax.Zoning","Characteristics.LotFeatures",
         ],
         'date_columns': ["Listing.Dates.CloseDate"],
         'boolean_columns': ["Structure.NewConstructionYN"],

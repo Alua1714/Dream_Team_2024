@@ -3,6 +3,17 @@ import numpy as np
 import os
 import ast
 from pathlib import Path
+import pickle
+
+def save_dictionary(path, data):
+    if not isinstance(data, dict):
+        raise ValueError("The data to be saved must be a dictionary.")
+
+    try:
+        with open(path, 'wb') as file:
+            pickle.dump(data, file)
+    except Exception as e:
+        raise Exception(f"An error occurred while saving the dictionary: {e}")
 
 def string_to_list(input_string):
     """Converts a string representation of a list into an actual list."""
@@ -23,13 +34,13 @@ def string_list_2(value):
         return value
     
 
-def one_hot_from_list(df, column_name):
+def one_hot_from_list(df, column_name,dic):
     """Creates one-hot encoding for elements in a column of lists."""
     # Ensure all values in the column are lists
     df[column_name] = df[column_name].apply(lambda x: x if isinstance(x, list) else [])
     # Extract unique elements across all lists
     unique_elements = set(element for lst in df[column_name] for element in lst)
-    print(len(unique_elements))
+    dic[column_name] = unique_elements
     # Create one-hot encoded columns
     for element in unique_elements:
         new_el = element.replace(" ", "_")
@@ -50,17 +61,18 @@ def preprocess_dataframe(df, config):
     """Preprocess the DataFrame by applying one-hot encoding."""
     for col in config['prepare']:
         df[col] = df[col].apply(string_list_2)
-
+    dic = dict()
     for col in config['columns_to_one_hot']:
         if col in df.columns:
             # Convert string representations of lists to actual lists
             df[col] = df[col].apply(string_to_list)
             # Apply one-hot encoding
-            df = one_hot_from_list(df, col)
+            df = one_hot_from_list(df, col,dic)
             # Drop the original column
             df.drop(columns=col, inplace=True, errors='ignore')
         else:
             print(f"Column '{col}' not found in DataFrame. Skipping...")
+    save_dictionary("../backend/data/saved_data.pkl",dic)
     return df
 
 def encode(data, col, max_val):

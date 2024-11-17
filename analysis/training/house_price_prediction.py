@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, root_mean_squared_error
 import mlflow
 import mlflow.sklearn
 import mlflow.lightgbm
@@ -13,8 +13,9 @@ import os
 from datetime import datetime
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple, List, Optional, Any
-import matplotlib as plt
+import matplotlib.pylab as plt
 import time
+from sklearn.model_selection import learning_curve
 
 
 class BaseModel(ABC):
@@ -35,24 +36,64 @@ class BaseModel(ABC):
         """Get model name for logging"""
         pass
 
-class LightGBMModel(BaseModel):
-    """LightGBM model implementation"""
+class EnsembleLightGBMModel(BaseModel):
+    """Ensemble of LightGBM models with different parameters and weighted averaging"""
     
-    def __init__(self, params: Dict[str, Any]):
-        self.model = LGBMRegressor(**params)
-        self.params = params
+    def __init__(self, model_configs: List[Dict[str, Any]], weights: List[float] = None):
+        """
+        Initialize ensemble with multiple model configurations
+        
+        Args:
+            model_configs: List of dictionaries containing parameters for each model
+            weights: List of weights for ensemble averaging. Must sum to 1.
+        """
+        if weights is None:
+            self.weights = [1/len(model_configs)] * len(model_configs)
+        else:
+            if len(weights) != len(model_configs):
+                raise ValueError("Number of weights must match number of models")
+            if abs(sum(weights) - 1.0) > 1e-5:
+                raise ValueError("Weights must sum to 1")
+            self.weights = weights
+            
+        self.models = [LGBMRegressor(**config) for config in model_configs]
+        self.feature_importances_ = None
+        self.feature_name_ = None
     
     def train(self, X_train: pd.DataFrame, y_train: pd.Series) -> None:
-        self.model.fit(X_train, y_train)
+        """Train all models in the ensemble"""
+        self.feature_name_ = X_train.columns.tolist()
+        
+        print("\nTraining Ensemble Models:")
+        for i, model in enumerate(self.models, 1):
+            print(f"\nTraining Model {i} (Weight: {self.weights[i-1]:.2f})")
+            model.fit(X_train, y_train, feature_name=self.feature_name_,sample_weight=get_weights(X_train))
+            
+            # Calculate training metrics for each model
+            y_pred = model.predict(X_train)
+            mae = mean_absolute_error(y_train, y_pred)
+            print(f'Model {i} Training MAE: ${mae:,.2f}')
+        
+        # Combine feature importances with weights
+        self.feature_importances_ = np.zeros(len(self.feature_name_))
+        for model, weight in zip(self.models, self.weights):
+            self.feature_importances_ += weight * model.feature_importances_
     
     def predict(self, X: pd.DataFrame) -> np.ndarray:
-        return self.model.predict(X)
+        """Make weighted predictions using all models"""
+        predictions = np.zeros(len(X))
+        for model, weight in zip(self.models, self.weights):
+            predictions += weight * model.predict(X)
+        return predictions
     
     def get_model_name(self) -> str:
-        return "LightGBM"
+        return "EnsembleLightGBM"
     
     def get_feature_importance(self) -> Dict[str, float]:
-        return dict(zip(self.model.feature_name_, self.model.feature_importances_))
+        """Get weighted feature importance across all models"""
+        if self.feature_importances_ is None or self.feature_name_ is None:
+            raise ValueError("Model must be trained before getting feature importance")
+        return dict(zip(self.feature_name_, self.feature_importances_))
 
 class TimeSeriesCV:
     """Time series cross-validation with expanding window"""
@@ -65,7 +106,7 @@ class TimeSeriesCV:
         # Convert dates if they're strings
         if isinstance(X[date_column].iloc[0], str):
             X[date_column] = pd.to_datetime(X[date_column])
-            
+        
         # Create month_year column
         X['month_year'] = X[date_column].dt.to_period('M')
         
@@ -126,7 +167,7 @@ class ModelPersistence:
         os.makedirs(model_dir, exist_ok=True)
         
         # Save model
-        dump(model, os.path.join(model_dir, 'model.joblib'))
+        dump(model, os.path.join(model_dir, 'model.joblib'), protocol=4)
         
         if scaler is not None:
             dump(scaler, os.path.join(model_dir, 'scaler.joblib'))
@@ -182,6 +223,15 @@ class ModelEvaluator:
             'percentage_error': percentage_error
         }
 
+def get_weights(df):
+    df['Listing.Dates.CloseDate'] = pd.to_datetime(df['Listing.Dates.CloseDate'])
+    min_date = df['Listing.Dates.CloseDate'].min()
+    max_date = df['Listing.Dates.CloseDate'].max()
+    normalized_times = (df['Listing.Dates.CloseDate'] - min_date).dt.total_seconds() / (max_date - min_date).dt.total_seconds()
+    decay_factor = 0.1
+    weights = np.exp(decay_factor * normalized_times)
+    return weights
+
 class HousePricePredictor:
     """Main class for house price prediction workflow"""
     
@@ -216,18 +266,53 @@ class HousePricePredictor:
         print(f"Experiment Name: {experiment_name}")
         print(f"Experiment ID: {experiment_id}")
 
+    def create_engineered_features(self, df):
+        df['Polar2'] = pow(df['Polar.Theta'], 2)
+        df['Polar3'] = pow(df['Polar.R'], 4)
+
+        # Area ratios
+        df['living_to_lot_ratio'] = np.log( df['Structure.LivingArea'] / df['Characteristics.LotSizeSquareFeet'])
+        df['below_grade_ratio'] = np.log(df['Structure.BelowGradeFinishedArea'] / df['Structure.LivingArea'])
+        
+        # Bathroom features
+        df['total_bathrooms'] = df['Structure.BathroomsFull'] + 0.5 * df['Structure.BathroomsHalf']
+        df['bathroom_density'] = df['total_bathrooms'] / df['Structure.LivingArea']
+        
+        # Age features
+        current_year = 2024
+        df['property_age'] = current_year - df['Structure.YearBuilt']
+        df['age_bracket'] = pd.cut(df['property_age'], 
+                                bins=[0, 10, 20, 30, 40, 50, float('inf')],
+                                labels=['0-10', '11-20', '21-30', '31-40', '41-50', '50+'])
+        
+        # Room metrics
+        df['room_density'] = df['Structure.Rooms.RoomsTotal'] / df['Structure.LivingArea']
+        df['bedroom_ratio'] = df['Structure.BedroomsTotal'] / df['Structure.Rooms.RoomsTotal']
+        
+        # Quality scores
+        df['interior_quality'] = df[[col for col in df.columns if 'interior' in col.lower()]].mean(axis=1)
+
+    
+        return df
+
     def prepare_data(self, data_path: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """Load and preprocess data"""
         df = pd.read_csv(data_path)
+        df = self.create_engineered_features(df)
+
+        # top_feat = ['one_hot_Appliances.WineCooler', 'one_hot_ParkingFeatures.ParkingPad', 'one_hot_ParkingFeatures.ElectricVehicleChargingStations', 'one_hot_Appliances.WaterSoftener', 'one_hot_FireplaceFeatures.Bedroom', 'one_hot_View.CreekStream', 'one_hot_OtherStructures.Storage', 'one_hot_Heating.Oil', 'one_hot_LaundryFeatures.CommonArea', 'one_hot_Office', 'one_hot_Levels.OneAndOneHalf', 'one_hot_AssociationAmenities.Barbecue', 'one_hot_OtherStructures.Barns', 'one_hot_golf_course_lot', 'one_hot_infill_lot', 'one_hot_other', 'one_hot_forest_preserve_adjacent', 'one_hot_View.Mountains', 'one_hot_partial_fencing', 'one_hot_creek', 'one_hot_OtherStructures.PoolHouse', 'one_hot_Heating.Propane', 'one_hot_AssociationAmenities.BasketballCourt', 'one_hot_PoolFeatures.AboveGround', 'one_hot_Heating.Ductless', 'one_hot_Appliances.GasWaterHeater', 'one_hot_InteriorOrRoomFeatures.Chandelier', 'one_hot_dual', 'one_hot_total', 'one_hot_window/wall_units_-_2', 'one_hot_rtail', 'one_hot_indus', 'one_hot_chillers', 'one_hot_reverse_cycle', 'one_hot_power_roof_vents', 'one_hot_office_only', 'one_hot_pud', 'one_hot_ceiling_fan(s)', 'one_hot_exhaust_fan', 'one_hot_electric', 'one_hot_ParkingFeatures.Basement', 'one_hot_window/wall_unit_-_1', 'one_hot_wall_sleeve', 'one_hot_window_unit(s)', 'one_hot_high_efficiency_(seer_14+)', 'one_hot_Storage', 'one_hot_ExteriorFeatures.Balcony', 'one_hot_views', 'one_hot_business_opportunity', 'one_hot_wooded', 'one_hot_heat_pump', 'one_hot_partial', 'one_hot_air_curtain', 'one_hot_roof_turbine(s)', 'one_hot_dimensions_to_center_of_road', 'one_hot_window/wall_units_-_3+', 'one_hot_gas', 'one_hot_manuf', 'one_hot_lnc', 'one_hot_offic', 'one_hot_commr', 'one_hot_pmd', 'one_hot_wrhse', 'one_hot_ConstructionMaterials.BoardAndBattenSiding', 'one_hot_pasture', 'one_hot_AssociationAmenities.Storage', 'one_hot_CommunityFeatures.Curbs', 'one_hot_Flooring.Stone', 'one_hot_pie_shaped_lot', 'one_hot_AssociationAmenities.Playground', 'one_hot_backs_to_public_grnd', 'one_hot_level', 'one_hot_Basement.Concrete', 'one_hot_Flooring.Tile', 'one_hot_AssociationAmenities.Laundry', 'one_hot_backs_to_open_grnd', 'one_hot_woven_wire_fence', 'one_hot_nature_preserve_adjacent', 'one_hot_Flooring.Marble', 'one_hot_PatioAndPorchFeatures.Porch', 'one_hot_channel_front', 'one_hot_CommunityFeatures.Golf', 'one_hot_Flooring.Concrete', 'one_hot_InteriorOrRoomFeatures.DryBar', 'one_hot_river_front', 'one_hot_Heating.SpaceHeater', 'one_hot_View.Neighborhood', 'one_hot_Fencing.BackYard', 'one_hot_fenced_yard', 'one_hot_wood_fence', 'one_hot_AssociationAmenities.GameRoom', 'one_hot_LaundryFeatures.GasDryerHookup', 'one_hot_FireplaceFeatures.Kitchen', 'one_hot_Roof.Metal', 'one_hot_OtherStructures.Workshop', 'one_hot_Roof.Tile', 'one_hot_ConstructionMaterials.Stone', 'one_hot_CommunityFeatures.Sidewalks', 'one_hot_FrontageType.Lakefront', 'one_hot_dock', 'one_hot_stream(s)', 'one_hot_AssociationAmenities.ShuffleboardCourt', 'one_hot_Appliances.WaterHeater', 'one_hot_AssociationAmenities.SportCourt', 'one_hot_backs_to_trees/woods', 'one_hot_FrontageType.Oceanfront', 'one_hot_ExteriorFeatures.Storage', 'one_hot_Heating.Electric', 'one_hot_ParkingFeatures.DetachedCarport', 'one_hot_Heating.Ceiling', 'one_hot_Basement.Unfinished', 'one_hot_WaterfrontFeatures.OceanFront', 'one_hot_spring(s)', 'one_hot_CommunityFeatures.StreetLights', 'one_hot_View.TreesWoods', 'one_hot_WaterfrontFeatures.Pond', 'one_hot_pond(s)', 'one_hot_Roof.Wood', 'one_hot_View.Lake', 'one_hot_sloped', 'one_hot_rear_of_lot', 'one_hot_adjoins_government_land', 'one_hot_LaundryFeatures.InKitchen', 'one_hot_View.Rural', 'one_hot_ExteriorFeatures.Barbecue', 'one_hot_ExteriorFeatures.Playground', 'one_hot_AssociationAmenities.FitnessCenter', 'one_hot_PoolFeatures.Community', 'one_hot_legal_non-conforming', 'one_hot_ExteriorFeatures.BuiltInBarbecue', 'one_hot_ExerciseRoom', 'one_hot_ExteriorFeatures.PrivateYard', 'one_hot_Roof.Slate', 'one_hot_chain_link_fence', 'one_hot_irregular_lot', 'one_hot_InteriorOrRoomFeatures.WetBar', 'one_hot_electric_fence', 'one_hot_DoorFeatures.FrenchDoors', 'one_hot_multi', 'one_hot_Balcony', 'one_hot_Appliances.Microwave', 'one_hot_Heating.Baseboard', 'one_hot_Appliances.Range', 'one_hot_FloorPlan', 'one_hot_AssociationAmenities.IndoorPool', 'one_hot_OtherStructures.Stables', 'one_hot_outdoor_lighting', 'one_hot_Attic', 'one_hot_Fence', 'one_hot_mature_trees', 'one_hot_Appliances.GasCooktop', 'one_hot_View', 'one_hot_Patio', 'one_hot_Bar', 'one_hot_sidewalks', 'one_hot_LaundryFeatures.InGarage', 'one_hot_water_rights', 'one_hot_InteriorOrRoomFeatures.BeamedCeilings', 'one_hot_FireplaceFeatures.DiningRoom', 'one_hot_Hallway', 'one_hot_AssociationAmenities.Pool', 'one_hot_corner_lot', 'one_hot_Appliances.RangeHood', 'one_hot_AerialView', 'one_hot_Appliances.Cooktop', 'one_hot_PatioAndPorchFeatures.Patio', 'one_hot_agric', 'one_hot_Flooring.Terrazzo', 'one_hot_InteriorOrRoomFeatures.CofferedCeilings', 'one_hot_Flooring.Brick', 'one_hot_SpaFeatures.Private', 'one_hot_LaundryFeatures.InBasement', 'one_hot_LaundryFeatures.LaundryRoom', 'one_hot_FireplaceFeatures.LivingRoom', 'one_hot_Appliances.Washer', 'one_hot_Appliances.WasherDryerStacked', 'one_hot_SecurityFeatures.SmokeDetectors', 'one_hot_Heating.Fireplaces', 'one_hot_Appliances.WasherDryer', 'one_hot_WalkInClosets', 'one_hot_Appliances.Refrigerator', 'one_hot_ExteriorFeatures.Dock', 'one_hot_AssociationAmenities.Elevators', 'one_hot_InteriorOrRoomFeatures.TrackLighting', 'one_hot_chain_of_lakes_frontage', 'one_hot_LaundryFeatures.LaundryCloset', 'one_hot_ExteriorFeatures.FirePit', 'one_hot_ExteriorFeatures.Awnings', 'one_hot_Appliances.DoubleOven', 'one_hot_View.Skyline', 'one_hot_FireplaceFeatures.Outside', 'one_hot_LaundryFeatures.Sink', 'one_hot_FireplaceFeatures.RaisedHearth', 'one_hot_InteriorOrRoomFeatures.Bar', 'one_hot_central_individual', 'one_hot_InteriorOrRoomFeatures.WalkInClosets', 'one_hot_Appliances.GasRange', 'one_hot_PoolFeatures.InGround', 'one_hot_Flooring.Hardwood', 'one_hot_ParkingFeatures.Attached', 'one_hot_InteriorOrRoomFeatures.CrownMolding', 'one_hot_landscaped', 'one_hot_Levels.Two', 'one_hot_Electric.Generator', 'one_hot_Gym', 'one_hot_WineCellar', 'one_hot_Appliances.Oven', 'one_hot_Other', 'one_hot_waterfront', 'one_hot_LaundryFeatures.ElectricDryerHookup', 'one_hot_Community', 'one_hot_Appliances.IceMaker', 'one_hot_Flooring.Carpet', 'one_hot_commercial_lease', 'one_hot_Stable', 'one_hot_farm', 'one_hot_WaterfrontFeatures.Creek', 'one_hot_OtherStructures.OutdoorKitchen', 'one_hot_park_adjacent', 'one_hot_water_view', 'one_hot_geothermal', 'one_hot_Kitchen', 'one_hot_InteriorOrRoomFeatures.StoneCounters', 'one_hot_View.Water', 'one_hot_Yard', 'one_hot_none', 'one_hot_ExteriorFeatures.OutdoorKitchen', 'one_hot_SecurityFeatures.FireSprinklerSystem', 'one_hot_InteriorOrRoomFeatures.BreakfastBar', 'one_hot_paddock', 'one_hot_InteriorOrRoomFeatures.DoubleVanity', 'one_hot_PatioAndPorchFeatures.FrontPorch', 'one_hot_singl', 'one_hot_Pool', 'one_hot_Appliances.Dishwasher', 'one_hot_lake_access', 'one_hot_WaterfrontFeatures.BeachFront', 'one_hot_PoolFeatures.Indoor', 'one_hot_SpaFeatures.InGround', 'one_hot_ParkingFeatures.Garage', 'one_hot_lake_front', 'ImageData.c1c6.summary.kitchen', 'one_hot_Appliances.BuiltInRefrigerator', 'one_hot_SunRoom', 'one_hot_Lobby', 'one_hot_zoned', 'one_hot_View.Pool', 'one_hot_InteriorOrRoomFeatures.BuiltInFeatures', 'one_hot_central_air', 'one_hot_Appliances.StainlessSteelAppliances', 'one_hot_Cooling.CeilingFans', 'one_hot_residential', 'Structure.NewConstructionYN', 'one_hot_space_pac', 'one_hot_MudRoom', 'day_sin', 'age_bracket', 'one_hot_manufactured_in_park', 'day_cos', 'one_hot_common_grounds', 'one_hot_commercial_sale', 'ImageData.style.stories.summary.label', 'one_hot_beach', 'one_hot_horses_allowed', 'month_sin', 'ImageData.c1c6.summary.exterior', 'ImageData.c1c6.summary.bathroom', 'one_hot_View.City', 'Structure.YearBuilt', 'month_cos', 'ImageData.c1c6.summary.property', 'ImageData.c1c6.summary.interior', 'below_grade_ratio', 'one_hot_residential_income', 'Structure.BedroomsTotal', 'bedroom_ratio', 'living_to_lot_ratio', 'ImageData.q1q6.summary.bathroom', 'ImageData.q1q6.summary.exterior', 'interior_quality', 'Structure.BelowGradeUnfinishedArea', 'Structure.Rooms.RoomsTotal', 'ImageData.q1q6.summary.interior', 'Structure.BathroomsHalf', 'Structure.BelowGradeFinishedArea', 'ImageData.q1q6.summary.kitchen', 'Structure.BathroomsFull', 'Structure.GarageSpaces', 'room_density', 'bathroom_density', 'Structure.FireplacesTotal', 'Structure.LivingArea', 'property_age', 'ImageData.q1q6.summary.property', 'Polar.Theta', 'Polar2', 'Characteristics.LotSizeSquareFeet', 'total_bathrooms', 'Listing.Price.ClosePrice', 'Listing.Dates.CloseDate']
+
+        print(f'Columns input file: {df.iloc[0]}')
         
         # Convert date column to datetime
         df['Listing.Dates.CloseDate'] = pd.to_datetime(df['Listing.Dates.CloseDate'])
 
-        drop_col=['Structure.NewConstructionYN']
-        df = df.drop(drop_col, axis='columns')  
+        X = df.drop(columns=['Listing.Price.ClosePrice'])
 
-        X = df.drop('Listing.Price.ClosePrice', axis=1)
         y = df['Listing.Price.ClosePrice']
+
+        print(f'Columns input file after transf: {len(X.iloc[0])}')
+
         return train_test_split(X, y, test_size=0.2, random_state=42)
 
     def train_and_evaluate(self, X: pd.DataFrame, y: pd.Series) -> Dict:
@@ -302,10 +387,6 @@ class HousePricePredictor:
                     'predictions': val_pred.tolist()
                 })
 
-                if fold == 8:
-                    print('Getting rellevant features...')
-                    self.get_rellevant_features(X_val_fold)
-
             
             # Calculate and print average metrics
             avg_metrics = {
@@ -339,42 +420,157 @@ class HousePricePredictor:
         
         return results
     
-    def get_rellevant_features(self, X_test, random_state = 4):
-        # Extracting feature importances from the model (if available)
-        model = self.model
-        feature_names = list(X_test.columns)
 
-        # Checking if the model has feature_importances_ or coefficients
-        if hasattr(model, 'feature_importances_'):
-            importances = model.feature_importances_
-        elif hasattr(model, 'coef_'):
-            importances = np.abs(model.coef_)
-        else:
-            importances = None
-            print("The model does not have 'feature_importances_' or 'coef_' attributes")
 
-        if importances is not None:
-            # Creating a DataFrame for feature importances
-            feat_imp_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances}).sort_values(by='Importance', ascending=False)
-            
-            # Saving and logging feature importances as CSV
-            feat_imp_csv = 'feature_importance.csv'
-            feat_imp_df.to_csv(feat_imp_csv, index=False)
-            mlflow.log_artifact(feat_imp_csv)
+    def show_rellevant_features(self, data):
+        categories = list(data.keys())
+        values = list(data.values())
 
-            # Plotting and saving feature importances
-            plt.figure(figsize=(10, 6))
-            plt.barh(feat_imp_df['Feature'], feat_imp_df['Importance'])
-            plt.gca().invert_yaxis()
-            plt.xlabel('Importance')
-            plt.title('Feature Importances')
-            plt.tight_layout()
-            
-            # Saving and log the plot
-            feat_imp_png = 'feature_importance.png'
-            plt.savefig(feat_imp_png)
-            plt.close()
-            mlflow.log_artifact(feat_imp_png)
+        # Sort data by values for better visualization
+        sorted_indices = np.argsort(values)
+        categories = [categories[i] for i in sorted_indices[-500:-1]]
+        values = [values[i] for i in sorted_indices[-500:-1]]
+
+    
+        # Create the plot
+        plt.figure(figsize=(10, len(categories) * 0.3))  # Adjust height for better fit
+        plt.barh(categories, values, color="skyblue")
+        plt.xlabel("Values")
+        plt.title("Horizontal Bar Chart")
+        plt.tight_layout()
+
+        # Save the plot
+        plot_path = "horizontal_barchart.png"
+        plt.savefig(plot_path)
+        plt.close()
+
+        mlflow.log_artifact(plot_path)
+        print(f"Bar chart logged as artifact: {plot_path}")
+
+
+def create_engineered_features(df):
+    df['Polar2'] = pow(df['Polar.Theta'], 2)
+    df['Polar3'] = pow(df['Polar.R'], 4)
+
+    # Area ratios
+    df['living_to_lot_ratio'] = np.log( df['Structure.LivingArea'] / df['Characteristics.LotSizeSquareFeet'])
+    df['below_grade_ratio'] = np.log(df['Structure.BelowGradeFinishedArea'] / df['Structure.LivingArea'])
+    
+    # Bathroom features
+    df['total_bathrooms'] = df['Structure.BathroomsFull'] + 0.5 * df['Structure.BathroomsHalf']
+    df['bathroom_density'] = df['total_bathrooms'] / df['Structure.LivingArea']
+    
+    # Age features
+    current_year = 2024
+    df['property_age'] = current_year - df['Structure.YearBuilt']
+    df['age_bracket'] = pd.cut(df['property_age'], 
+                            bins=[0, 10, 20, 30, 40, 50, float('inf')],
+                            labels=['0-10', '11-20', '21-30', '31-40', '41-50', '50+'])
+    
+    # Room metrics
+    df['room_density'] = df['Structure.Rooms.RoomsTotal'] / df['Structure.LivingArea']
+    df['bedroom_ratio'] = df['Structure.BedroomsTotal'] / df['Structure.Rooms.RoomsTotal']
+    
+    # Quality scores
+    df['interior_quality'] = df[[col for col in df.columns if 'interior' in col.lower()]].mean(axis=1)
+
+    return df
+
+
+
+def generate_predictions_file(
+    model,                    # Your trained LightGBM model
+    validation_df,           # Validation DataFrame without target
+    lookup_df,
+    id_column='Listing.ListingId', # Name of your ID column
+    output_path='predictions.csv',  # Where to save the predictions
+    feature_columns=None, 
+    ):
+    try:
+        # Make a copy to avoid modifying the original dataframe
+        val_df = validation_df.copy()
+        val_df = create_engineered_features(val_df)
+        val_df = val_df.drop(columns=['Listing.Price.ClosePrice', 'Listing.Dates.CloseDate'])
+        
+        # Generate predictions
+        predictions = model.predict(val_df)
+        
+        # Create output dataframe
+        output_df = pd.DataFrame({
+            'ID': lookup_df[id_column],
+            'predicted_price': predictions
+        })
+        
+        # Sort by ID
+        output_df = output_df.sort_values('ID')
+        
+        # Save to CSV
+        output_df.to_csv(output_path, index=False)
+        
+        print(f"Predictions saved to {output_path}")
+        print(f"Number of predictions: {len(predictions)}")
+        print("\nPreview of predictions:")
+        print(output_df.head())
+        print("\nSummary statistics:")
+        print(output_df['predicted_price'].describe())
+        
+        return output_df
+        
+    except Exception as e:
+        print(f"Error generating predictions: {str(e)}")
+        raise
+
+
+def get_ensemble_configs():
+    # Model 1: Focused on deep relationships with more trees and depth
+    deep_model_params = {
+        "n_estimators": 200,
+        "max_depth": 12,
+        "num_leaves": 100,
+        "learning_rate": 0.05,
+        "min_child_samples": 20,
+        "min_split_gain": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "random_state": 42,
+        "verbose": -1
+    }
+    
+    # Model 2: Focused on preventing overfitting with regularization
+    robust_model_params = {
+        "n_estimators": 150,
+        "max_depth": 8,
+        "num_leaves": 50,
+        "learning_rate": 0.1,
+        "min_child_samples": 30,
+        "min_split_gain": 0.1,
+        "reg_alpha": 0.1,
+        "reg_lambda": 0.1,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7,
+        "random_state": 43,
+        "verbose": -1
+    }
+    
+    # Model 3: Focused on local patterns with smaller trees but more of them
+    local_model_params = {
+        "n_estimators": 300,
+        "max_depth": 6,
+        "num_leaves": 32,
+        "learning_rate": 0.03,
+        "min_child_samples": 10,
+        "min_split_gain": 0.01,
+        "subsample": 0.9,
+        "colsample_bytree": 0.9,
+        "random_state": 44,
+        "verbose": -1
+    }
+    
+    return [deep_model_params, robust_model_params, local_model_params]
+
+def get_ensemble_weights():
+    return [0.4, 0.3, 0.3]  # Giving slightly more weight to the deep model
+
 
 def main():
     # Clear existing mlruns directory if it exists (optional, remove if you want to keep history)
@@ -386,30 +582,22 @@ def main():
     parent_dir = os.path.abspath(os.path.join(os.getcwd(), 'dataset'))
     train_file = os.path.abspath(os.path.join(parent_dir, 'df_train.csv'))
     
-    # Initialize model with parameters
-    lgb_params = {
-        "n_estimators": 100,
-        "max_depth": 10,
-        "num_leaves": 31,
-        "learning_rate": 0.1,
-        "min_child_samples": 20,
-        "min_split_gain": 0.1,
-        "random_state": 42,
-        "verbose": -1
-    }
-    model = LightGBMModel(lgb_params)
-    
+    model_configs = get_ensemble_configs()
+    weights = get_ensemble_weights()
+    model = EnsembleLightGBMModel(model_configs, weights)
+
     # Initialize predictor with experiment name
     predictor = HousePricePredictor(model, "house_price_experiment")
     predictor.cv = TimeSeriesCV(min_training_months=3, forecast_months=1)
     
     # Print starting message
-    print("\nStarting House Price Prediction")
+    print("\nStarting House Price Prediction with Ensemble Model")
     print("="*50)
-    print("Model Parameters:")
-    for param, value in lgb_params.items():
-        print(f"{param}: {value}")
-    
+    print("Ensemble Configuration:")
+    for i, config in enumerate(model_configs, 1):
+        print(f"\nModel {i} Parameters (Weight: {weights[i-1]:.2f}):")
+        for param, value in config.items():
+            print(f"{param}: {value}")
     # Prepare data
     X_train, X_test, y_train, y_test = predictor.prepare_data(train_file)
     
@@ -424,8 +612,14 @@ def main():
 
     predictor.persistence.save_model(model)
 
+    predictor.show_rellevant_features(model.get_feature_importance())
+
     print("\nMLflow UI can be started with:")
     print("mlflow ui --backend-store-uri file:./mlruns")
+    validation_df = pd.read_csv('./dataset/df_test.csv')
+    id_df = pd.read_csv('./dataset/test_modified.csv', low_memory=False)
+
+    generate_predictions_file(model, validation_df, id_df)
 
 if __name__ == "__main__":
     main()

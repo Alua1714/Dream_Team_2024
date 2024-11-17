@@ -60,9 +60,9 @@
 
   function capitalizeWords(str: string) {
     return str
-      .split(' ')
+      .split(" ")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .join(" ");
   }
 </script>
 
@@ -70,7 +70,7 @@
   {#if results}
     <div class="px-2 py-6">
       <ScrollArea class="h-[540px] rounded">
-        <div class="space-y-3 px-4 w-full">
+        <div class="space-y-4 px-4 w-full">
           {#each results as house}
             {@render houseCard(house)}
           {/each}
@@ -125,10 +125,16 @@
 {#snippet houseCard(house)}
   <button
     onclick={() => selectLocation(house)}
-    class="w-full text-left rounded p-4 pt-8 transition-all relative border {selectedHouse?.listing_id === house.listing_id ? "border-primary" : ""}"
+    class="w-full text-left rounded-lg p-4 pt-5 mt-2 relative border
+    {selectedHouse?.listing_id === house.listing_id ? "border-primary shadow" : ""}"
   >
-    <h2 class="font-semibold">{capitalizeWords(house.adress)}</h2>
-    <span class="text-white text-sm bg-red-500 rounded-full px-2 absolute top-2 left-2">
+    <div class="flex items-center gap-3">
+      <MapPin class="h-6 w-6 text-primary" />
+      <h2 class="font-medium text-gray-900">
+        {capitalizeWords(house.adress)}
+      </h2>
+    </div>
+    <span class="absolute -top-2 right-3 px-2 bg-red-500 text-white text-sm rounded-full">
       ${Math.round(house.prediction).toLocaleString()}
     </span>
   </button>
@@ -144,9 +150,9 @@
       <Card.Title>{selectedHouse?.adress}</Card.Title>
     </Card.Header>
     <Card.Content>
-      <div class="text-sm text-gray-500 mb-4 flex items-center">
-        <MapPin class="mr-2 h-4 w-4" />
-        <p>Lat: {selectedHouse?.location.latitude}, Lon: {selectedHouse?.location.longitude}</p>
+      <div class="text-sm text-gray-500 mb-4">
+        <p>Lat: {selectedHouse?.location.latitude}</p>
+        <p>Lon: {selectedHouse?.location.longitude}</p>
       </div>
       {#if selectedHouse?.structure_yearbuilt}
         <p>Year Built: {Math.round(selectedHouse.structure_yearbuilt)}</p>

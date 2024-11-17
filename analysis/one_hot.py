@@ -32,7 +32,8 @@ def one_hot_from_list(df, column_name):
     print(len(unique_elements))
     # Create one-hot encoded columns
     for element in unique_elements:
-        one_hot_col_name = f"one_hot_{element}"
+        new_el = element.replace(" ", "_")
+        one_hot_col_name = f"one_hot_{new_el}"
         df[one_hot_col_name] = df[column_name].apply(lambda lst: 1 if element in lst else 0)
     
     return df

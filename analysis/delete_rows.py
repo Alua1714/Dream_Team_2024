@@ -78,7 +78,7 @@ def main():
             "ImageData.style.exterior.summary.label", "Structure.Basement",
             "Structure.Cooling", "Structure.Heating", "Structure.ParkingFeatures",
             "UnitTypes.UnitTypeType", "Listing.ListingId", "Property.PropertyType",
-            "Tax.Zoning","Characteristics.LotFeatures",
+            "Tax.Zoning",
         ],
         'date_columns': ["Listing.Dates.CloseDate"],
         'boolean_columns': ["Structure.NewConstructionYN"],

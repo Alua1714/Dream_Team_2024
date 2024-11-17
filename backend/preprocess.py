@@ -453,8 +453,3 @@ def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
         raise
-
-
-df_test = pd.read_csv(Path("C:/Users/eloip/Documents/datathon_2024/Dream_Team_2024/dataset/test_modified.csv"))
-df_final = process_data(df_test)    
-df_final.to_csv('data.csv', index=False)

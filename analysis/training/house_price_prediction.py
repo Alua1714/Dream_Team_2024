@@ -67,7 +67,7 @@ class EnsembleLightGBMModel(BaseModel):
         print("\nTraining Ensemble Models:")
         for i, model in enumerate(self.models, 1):
             print(f"\nTraining Model {i} (Weight: {self.weights[i-1]:.2f})")
-            model.fit(X_train, y_train, feature_name=self.feature_name_)
+            model.fit(X_train, y_train, feature_name=self.feature_name_,sample_weight=get_weights(X_train))
             
             # Calculate training metrics for each model
             y_pred = model.predict(X_train)
@@ -227,13 +227,9 @@ def get_weights(df):
     df['Listing.Dates.CloseDate'] = pd.to_datetime(df['Listing.Dates.CloseDate'])
     min_date = df['Listing.Dates.CloseDate'].min()
     max_date = df['Listing.Dates.CloseDate'].max()
-    max_value = 10000
-    # Convert to days since minimum date and normalize to 0-max_value range
-    normalized_time_max = (df['Listing.Dates.CloseDate'] - min_date).dt.total_seconds() * max_value / \
-                        (max_date - min_date).total_seconds()
     normalized_times = (df['Listing.Dates.CloseDate'] - min_date).dt.total_seconds() / (max_date - min_date).dt.total_seconds()
     decay_factor = 0.1
-    weights = np.exp(decay_factor *normalized_times)
+    weights = np.exp(decay_factor * normalized_times)
     return weights
 
 class HousePricePredictor:

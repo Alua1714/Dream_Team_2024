@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
   import { LoaderCircle } from "lucide-svelte";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
+  import InfoDialog from "$lib/components/InfoDialog.svelte";
 
   import * as Card from "$lib/components/ui/card/index.js";
 
@@ -11,17 +11,18 @@
   let files = $state(null);
   let formLoading = $state(false);
   let results = $state(null);
+  let selectedHouse = $state(null);
 
   async function handleSubmit() {
     formLoading = true;
     try {
       const formData = new FormData();
-      formData.append('file', files[0]);
+      formData.append("file", files[0]);
 
       const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/upload/`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'accept': 'application/json'
+          "accept": "application/json"
         },
         body: formData
       });
@@ -43,7 +44,7 @@
 
   function selectLocation(house) {
     map.setCoordinates(house.location.latitude, house.location.longitude);
-    console.log("Go to coordinates", house.location.latitude, house.location.longitude);
+    selectedHouse = house;
   }
 </script>
 
@@ -59,7 +60,7 @@
     </ScrollArea>
   </div>
   <Card.Footer>
-    <Button class="w-full" onclick={resetResults}>Upload Another file</Button>
+    <Button class="w-full" onclick={resetResults}>Upload Another File</Button>
   </Card.Footer>
 {:else}
   <form onsubmit={handleSubmit}>
@@ -97,10 +98,14 @@
 </Card.Root>
 
 {#snippet houseCard(house)}
-<button onclick={() => selectLocation(house)} class="w-full text-left">
-    <div class="border rounded p-4">
-        <h2>Id: {house.listing_id}</h2>
-        <p>Price: {house.prediction}</p>
-    </div>
+<button 
+  onclick={() => selectLocation(house)} 
+  class="w-full text-left rounded p-4 transition-all {selectedHouse?.listing_id === house.listing_id ? "border-2 border-primary" : "border"} "
+>
+  <div>
+    <h2>Id: {house.listing_id}</h2>
+    <p>Price: {house.prediction}</p>
+    <InfoDialog />
+  </div>
 </button>
 {/snippet}

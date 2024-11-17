@@ -7,6 +7,6 @@
   <iframe
     title="Google Street View"
     class="h-full w-full border-0 dark:invert-[90%]"
-    src={`https://www.google.com/maps/embed/v1/streetview?key=${googleMapsApiKey}&location=${map.coordinates}&heading=210&pitch=10&fov=90`}
+    src={`https://www.google.com/maps/embed/v1/streetview?key=${googleMapsApiKey}&location=${map.coordinates}`}
   ></iframe>
 </div>

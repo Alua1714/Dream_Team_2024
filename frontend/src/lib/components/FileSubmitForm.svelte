@@ -9,7 +9,6 @@
   let formLoading = $state(false);
 
   async function handleSubmit() {
-    console.log("Submitting form with files:");
     formLoading = true;
     try {
       const formData = new FormData();
@@ -42,11 +41,11 @@
 <Card.Root class="w-[350px]">
   <form onsubmit={handleSubmit}>
     <Card.Header>
-        <Card.Title>Import new dataset</Card.Title>
-        <Card.Description
-        >Upload the file containing the attributes of the houses you want to
-        predict the price of.</Card.Description
-        >
+      <Card.Title>Import new dataset</Card.Title>
+      <Card.Description
+      >Upload the file containing the attributes of the houses you want to
+      predict the price of.</Card.Description
+      >
     </Card.Header>
     <Card.Content>
       <div class="grid w-full items-center gap-4">

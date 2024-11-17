@@ -1,0 +1,130 @@
+[
+    {
+        "listing_id": "ny78392hjk234",
+        "location": {
+            "latitude": 40.7589,
+            "longitude": -73.9851
+        },
+        "prediction": 1250000
+    },
+    {
+        "listing_id": "la92837465kot",
+        "location": {
+            "latitude": 34.0522,
+            "longitude": -118.2437
+        },
+        "prediction": 890000
+    },
+    {
+        "listing_id": "ch56789plm432",
+        "location": {
+            "latitude": 41.8781,
+            "longitude": -87.6298
+        },
+        "prediction": 450000
+    },
+    {
+        "listing_id": "hou34567mnb89",
+        "location": {
+            "latitude": 29.7604,
+            "longitude": -95.3698
+        },
+        "prediction": 325000
+    },
+    {
+        "listing_id": "phx98765qwe43",
+        "location": {
+            "latitude": 33.4484,
+            "longitude": -112.0740
+        },
+        "prediction": 425000
+    },
+    {
+        "listing_id": "den45678rty90",
+        "location": {
+            "latitude": 39.7392,
+            "longitude": -104.9903
+        },
+        "prediction": 575000
+    },
+    {
+        "listing_id": "sea12345uio78",
+        "location": {
+            "latitude": 47.6062,
+            "longitude": -122.3321
+        },
+        "prediction": 825000
+    },
+    {
+        "listing_id": "bos67890dfg45",
+        "location": {
+            "latitude": 42.3601,
+            "longitude": -71.0589
+        },
+        "prediction": 750000
+    },
+    {
+        "listing_id": "atl23456hjk78",
+        "location": {
+            "latitude": 33.7490,
+            "longitude": -84.3880
+        },
+        "prediction": 395000
+    },
+    {
+        "listing_id": "mia78901qwe23",
+        "location": {
+            "latitude": 25.7617,
+            "longitude": -80.1918
+        },
+        "prediction": 485000
+    },
+    {
+        "listing_id": "aus34567rty56",
+        "location": {
+            "latitude": 30.2672,
+            "longitude": -97.7431
+        },
+        "prediction": 525000
+    },
+    {
+        "listing_id": "sfo89012uio89",
+        "location": {
+            "latitude": 37.7749,
+            "longitude": -122.4194
+        },
+        "prediction": 1350000
+    },
+    {
+        "listing_id": "por45678dfg12",
+        "location": {
+            "latitude": 45.5155,
+            "longitude": -122.6789
+        },
+        "prediction": 595000
+    },
+    {
+        "listing_id": "nas90123hjk45",
+        "location": {
+            "latitude": 36.1627,
+            "longitude": -86.7816
+        },
+        "prediction": 375000
+    },
+    {
+        "listing_id": "san56789qwe78",
+        "location": {
+            "latitude": 32.7157,
+            "longitude": -117.1611
+        },
+        "prediction": 775000
+    },
+    {
+        "listing_id": "min12345rty01",
+        "location": {
+            "latitude": 44.9778,
+            "longitude": -93.2650
+        },
+        "prediction": 425000
+    }
+]

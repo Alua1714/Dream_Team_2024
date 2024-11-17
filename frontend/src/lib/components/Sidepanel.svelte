@@ -47,8 +47,12 @@
   }
 
   function selectLocation(house) {
-    map.setCoordinates(house.location.latitude, house.location.longitude);
-    selectedHouse = house;
+    if (selectedHouse?.listing_id === house.listing_id) {
+      selectedHouse = null;
+    } else {
+      map.setCoordinates(house.location.latitude, house.location.longitude);
+      selectedHouse = house;
+    }
   }
 </script>
 
@@ -111,33 +115,26 @@
 {#snippet houseCard(house)}
   <button
     onclick={() => selectLocation(house)}
-    class="w-full text-left rounded p-4 transition-all relative {selectedHouse?.listing_id ===
-    house.listing_id
-      ? 'border-2 border-primary'
-      : 'border'} "
+    class="w-full text-left rounded p-4 transition-all relative border {selectedHouse?.listing_id === house.listing_id ? "border-primary" : ""}"
   >
     <div>
       <h2>Id: {house.listing_id}</h2>
       <p>Price: {house.prediction}</p>
     </div>
+    <span class="text-white text-xs bg-red-500 rounded-full px-2 absolute top-2 right-2">${house.prediction}</span>
   </button>
 {/snippet}
 
-{#if selectedHouse}
-  <Card.Root
-    class="absolute right-2 bottom-2 z-10 {selectedHouse === null
-      ? 'hiden'
-      : ''}"
-  >
+{#if selectedHouse !== null}
+  <Card.Root class="absolute right-2 bottom-2 z-10 overflow-hidden shadow-2xl {selectedHouse === null ? "hiden" : ""}">
     <StreetviewEmbed />
     <Card.Header>
-      <Card.Title>Import New Dataset</Card.Title>
+      <Card.Title>{selectedHouse?.listing_id}</Card.Title>
       <Card.Description>
         Upload a file containing the attributes of the houses
       </Card.Description>
     </Card.Header>
     <Card.Content>
-      <p>Selected house: {selectedHouse?.listing_id}</p>
       <p>Price: {selectedHouse?.prediction}</p>
     </Card.Content>
   </Card.Root>

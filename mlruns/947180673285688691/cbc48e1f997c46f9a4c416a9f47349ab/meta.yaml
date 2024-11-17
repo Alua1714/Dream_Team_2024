@@ -1,0 +1,15 @@
+artifact_uri: c:\Users\eloip\Documents\datathon_2024\Dream_Team_2024\mlruns\house_price_experiment/cbc48e1f997c46f9a4c416a9f47349ab/artifacts
+end_time: 1731834822441
+entry_point_name: ''
+experiment_id: '947180673285688691'
+lifecycle_stage: active
+run_id: cbc48e1f997c46f9a4c416a9f47349ab
+run_name: training_LightGBM
+run_uuid: cbc48e1f997c46f9a4c416a9f47349ab
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1731834812272
+status: 3
+tags: []
+user_id: eloip

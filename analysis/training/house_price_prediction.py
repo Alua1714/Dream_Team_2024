@@ -44,7 +44,7 @@ class LightGBMModel(BaseModel):
         self.params = params
     
     def train(self, X_train: pd.DataFrame, y_train: pd.Series) -> None:
-        self.model.fit(X_train, y_train, feature_name=X_train.columns.tolist())
+        self.model.fit(X_train, y_train, feature_name=X_train.columns.tolist(), sample_weight=get_weights(X_train))
         y = self.model.predict(X_train)
         print(f'Difference between output trained data and target: {mean_absolute_error(y_train,y)}')
     
@@ -185,6 +185,19 @@ class ModelEvaluator:
             'percentage_error': percentage_error
         }
 
+def get_weights(df):
+    df['Listing.Dates.CloseDate'] = pd.to_datetime(df['Listing.Dates.CloseDate'])
+    min_date = df['Listing.Dates.CloseDate'].min()
+    max_date = df['Listing.Dates.CloseDate'].max()
+    max_value = 10000
+    # Convert to days since minimum date and normalize to 0-max_value range
+    normalized_time_max = (df['Listing.Dates.CloseDate'] - min_date).dt.total_seconds() * max_value / \
+                        (max_date - min_date).total_seconds()
+    normalized_times = (df['Listing.Dates.CloseDate'] - min_date).dt.total_seconds() / (max_date - min_date).dt.total_seconds()
+    decay_factor = 0.1
+    weights = np.exp(decay_factor *normalized_times)
+    return weights
+
 class HousePricePredictor:
     """Main class for house price prediction workflow"""
     
@@ -244,6 +257,7 @@ class HousePricePredictor:
         
         # Quality scores
         df['interior_quality'] = df[[col for col in df.columns if 'interior' in col.lower()]].mean(axis=1)
+
     
         return df
 

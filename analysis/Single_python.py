@@ -172,7 +172,7 @@ def setup_paths():
     
     return {
         'test': modified_dir / 'test_modified.csv',
-        'train': modified_dir / 'train_modified.csv',
+        'train': modified_dir / 'df_del_train.csv',
         'modified': modified_dir
     }
 
@@ -314,14 +314,11 @@ def string_list_2(value):
         return value
     
 
-def one_hot_from_list(df, column_name):
+def one_hot_from_list(df, column_name, unique_elements):
     """Creates one-hot encoding for elements in a column of lists."""
     # Ensure all values in the column are lists
     df[column_name] = df[column_name].apply(lambda x: x if isinstance(x, list) else [])
     # Extract unique elements across all lists
-    unique_elements = set(element for lst in df[column_name] for element in lst)
-    print(len(unique_elements))
-    # Create one-hot encoded columns
     for element in unique_elements:
         new_el = element.replace(" ", "_")
         one_hot_col_name = f"one_hot_{new_el}"
@@ -337,7 +334,7 @@ def save_dataset(df, filename):
     except Exception as e:
         print(f"Error saving dataset to {filename}: {e}")
 
-def preprocess_dataframe2(df, config):
+def preprocess_dataframe2(df, config,uniques):
     """Preprocess the DataFrame by applying one-hot encoding."""
     for col in config['prepare']:
         df[col] = df[col].apply(string_list_2)
@@ -347,7 +344,7 @@ def preprocess_dataframe2(df, config):
             # Convert string representations of lists to actual lists
             df[col] = df[col].apply(string_to_list)
             # Apply one-hot encoding
-            df = one_hot_from_list(df, col)
+            df = one_hot_from_list(df, col, uniques[col])
             # Drop the original column
             df.drop(columns=col, inplace=True, errors='ignore')
         else:
@@ -359,7 +356,7 @@ def encode(data, col, max_val):
     data[col + '_cos'] = np.cos(2 * np.pi * data[col]/max_val)
     return data
 
-def process_data(df_test):
+def preprocess(df_test):
     # Setup paths
 
     paths = setup_paths()
@@ -371,11 +368,8 @@ def process_data(df_test):
         df_test = clean_dataframe(df_test)
         
         logging.info("Processing train dataset...")
-        df_train = pd.read_csv(paths['train'], low_memory=False)
-        df_train = clean_dataframe(df_train)
         
         logging.info("Modified datasets have been saved successfully.")
-        dataframes = [(df_train, 'df_del_train'), (df_test, 'df_del_test')]
 
         config = {
             'columns_to_drop': [
@@ -391,9 +385,9 @@ def process_data(df_test):
             'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
         }
 
-        df_train = preprocess_dataframe(df_train, config)
+        df_train = pd.read_csv(paths['train'], low_memory=False)
         df_test = preprocess_dataframe(df_test, config)
-
+        
         ##IMPUTE VALUES
         train_size = len(df_train)
         test_size = len(df_test)
@@ -432,10 +426,8 @@ def process_data(df_test):
             'prepare':["Tax.Zoning","Property.PropertyType"],
             'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
         }
-        df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
-        # Preprocess and save datasets
-        # Ensure 'month' is the numeric month value
-        df_combined = preprocess_dataframe2(df_combined,config2)
+        uniques = get_uniques()
+        df_combined = preprocess_dataframe2(df_combined,config2,uniques)
         df_combined['Listing.Dates.CloseDate'] = pd.to_datetime(df_combined['Listing.Dates.CloseDate'], errors='coerce')
 
     # Extract month and encode it
@@ -450,10 +442,8 @@ def process_data(df_test):
         df_train = df_combined.iloc[:train_size, :].reset_index(drop=True)
         df_test = df_combined.iloc[train_size:, :].reset_index(drop=True)
         
-        save_dataset(df_train, os.path.join(parent_dir, 'df_train.csv'))
-        save_dataset(df_test, os.path.join(parent_dir, 'df_test.csv'))
+        return df_test
     except Exception as e:
         logging.error(f"An error occurred: {str(e)}")
         raise
-
 

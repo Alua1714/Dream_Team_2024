@@ -1,10 +1,11 @@
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+import json
 
 app = FastAPI()
 
 origins = [
-    "http://localhost:4173",
+    "http://localhost:5173",
     "https://datathon.container.aed.cat",
 ]
 
@@ -22,4 +23,7 @@ async def health_check():
 
 @app.post("/upload/")
 async def upload_file(file: UploadFile):
-    return {"filename": file.filename}
+    path = "./response.json"
+    with open(path, 'r') as file:
+        response = json.load(file)
+    return response

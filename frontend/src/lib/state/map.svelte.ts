@@ -1,8 +1,8 @@
 function createMap() {
   let coordinates = $state("Barcelona");
 
-  function setCoordinates(lon: number, lat: number) {
-    coordinates = `${lon},${lat}`;
+  function setCoordinates(lat: number, lon: number) {
+    coordinates = `${lat},${lon}`;
   }
 
   return {

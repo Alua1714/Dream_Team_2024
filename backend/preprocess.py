@@ -2,17 +2,14 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import logging
-import math
 import os
 import ast
-import numpy as np
 import pandas as pd
 from lightgbm import LGBMRegressor
 from sklearn.preprocessing import LabelEncoder
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics.pairwise import nan_euclidean_distances
-import os
 import pickle
+
 
 class HybridImputer:
     """
@@ -177,6 +174,22 @@ def setup_paths():
         'modified': script_dir / 'data'
     }
 
+important_locations = [
+    (41.82064698842478, -87.79964386423387),
+    (41.902418293457885, -87.60154275379254),
+    (41.87897380756125, -87.62827578338285),
+    (41.910428444271915, -87.70059401735486),
+    (41.92691533524087, -87.69628146100543),
+    (41.8680506170819, -87.61805717359894),
+    (41.63641020573378, -88.53540916403767),
+    (41.9290179188145, -87.63405761365621),
+    (42.00268512389682, -87.91126405667943),
+    (41.80235064745896, -87.75745547017502),
+    (42.12808414490979, -87.90027774207515),
+    (42.07555182606426, -87.6948477743019),
+    (41.867930975959034, -87.62447480780993),
+    (41.644610141763216, -87.5127716767169)
+]
 
 def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Process a DataFrame to add missing latitude and longitude data."""
@@ -235,6 +248,15 @@ def cartesian_to_polar(df: pd.DataFrame) -> pd.DataFrame:
         # Assign results only to valid coordinates
         df.loc[valid_mask, "Polar.R"] = r
         df.loc[valid_mask, "Polar.Theta"] = theta
+        
+        for i, (lat, lng) in enumerate(important_locations):
+            lat, lng = np.radians(lat), np.radians(lng)
+            dlat = lat - center_lat
+            dlon = lon - center_lon
+            xd = R * dlon * np.cos((lat + center_lat) / 2)  # Adjust for latitude distortion
+            yd = R * dlat
+
+            df.loc[valid_mask, f"Distance.{i}"] = np.sqrt((x - xd)**2 + (y - yd)**2)
     columns_to_drop = [col for col in df.columns if col.startswith('Location')]
     df.drop(columns=columns_to_drop, inplace=True, errors='ignore')
     return df
@@ -448,6 +470,7 @@ def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
         df_test.drop(columns=['month','day'],inplace=True, errors='ignore')
 
         df_test.drop(["Listing.Price.ClosePrice", "Listing.Dates.CloseDate"], axis=1, inplace=True)
+        df_test.to_csv('data/processed.csv', index=False)
         return df_test
     
     except Exception as e:

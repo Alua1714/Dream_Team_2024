@@ -1,3 +1,10 @@
 fastapi
 uvicorn
 python-multipart
+pickle
+numpy
+pandas
+pathlib
+logging
+ast
+scikit-learn

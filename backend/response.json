@@ -1,130 +1,302 @@
 [
     {
-        "listing_id": "ny78392hjk234",
+        "listing_id": "mrd10801802",
+        "adress": "101 e madison street, pontiac, il 61764",
+        "structure_yearbuilt": "1899.0",
+        "property_propertytype": "commercial sale",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 40.7589,
-            "longitude": -73.9851
+            "latitude": -88.62856930686394,
+            "longitude": 40.88037422062109
         },
-        "prediction": 1250000
+        "prediction": 169394.92544739004
     },
     {
-        "listing_id": "la92837465kot",
+        "listing_id": "mrd10966126",
+        "adress": "222 w maple street, new lenox, il 60451",
+        "structure_yearbuilt": "1970.0",
+        "property_propertytype": "commercial sale",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 34.0522,
-            "longitude": -118.2437
+            "latitude": -87.96855527481216,
+            "longitude": 41.51414980625145
         },
-        "prediction": 890000
+        "prediction": 326867.1066471208
     },
     {
-        "listing_id": "ch56789plm432",
+        "listing_id": "mrd11165969",
+        "adress": "701/0 w monaville road, lake villa, il 60046",
+        "structure_yearbuilt": "",
+        "property_propertytype": "farm",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 41.8781,
-            "longitude": -87.6298
+            "latitude": -88.09586790746448,
+            "longitude": 42.39798290321284
         },
-        "prediction": 450000
+        "prediction": 1740679.0949619948
     },
     {
-        "listing_id": "hou34567mnb89",
+        "listing_id": "mrd11185881",
+        "adress": "850 e oak street #850, lake in the hills, il 60156",
+        "structure_yearbuilt": "2003.0",
+        "property_propertytype": "commercial sale",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 29.7604,
-            "longitude": -95.3698
+            "latitude": -88.3098332902398,
+            "longitude": 42.18932513361034
         },
-        "prediction": 325000
+        "prediction": 479492.3593033602
     },
     {
-        "listing_id": "phx98765qwe43",
+        "listing_id": "mrd11198825",
+        "adress": "925 morrison road, northbrook, il 60062",
+        "structure_yearbuilt": "2008.0",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "6.0",
+        "structure_bathroomshalf": "2.0",
+        "structure_bedroomstotal": "6.0",
+        "structure_basement": "['english']",
         "location": {
-            "latitude": 33.4484,
-            "longitude": -112.0740
+            "latitude": 42.1450213,
+            "longitude": -87.8028827
         },
-        "prediction": 425000
+        "prediction": 2530963.639276548
     },
     {
-        "listing_id": "den45678rty90",
+        "listing_id": "mrd11203997",
+        "adress": "210 main street, kinsman, il 60437",
+        "structure_yearbuilt": "",
+        "property_propertytype": "business opportunity",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 39.7392,
-            "longitude": -104.9903
+            "latitude": -88.56913387246323,
+            "longitude": 41.18990595080862
         },
-        "prediction": 575000
+        "prediction": 339570.2612442995
     },
     {
-        "listing_id": "sea12345uio78",
+        "listing_id": "mrd11225213",
+        "adress": "1301 s wabash avenue, chicago, il 60605",
+        "structure_yearbuilt": "1930.0",
+        "property_propertytype": "commercial sale",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 47.6062,
-            "longitude": -122.3321
+            "latitude": -87.62572067848669,
+            "longitude": 41.86570371221831
         },
-        "prediction": 825000
+        "prediction": 494982.3896547848
     },
     {
-        "listing_id": "bos67890dfg45",
+        "listing_id": "mrd11257626",
+        "adress": "5655 n spaulding avenue #1w, chicago, il 60659",
+        "structure_yearbuilt": "",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "1.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "2.0",
+        "structure_basement": "['none']",
         "location": {
-            "latitude": 42.3601,
-            "longitude": -71.0589
+            "latitude": -87.71127131772471,
+            "longitude": 41.98427162907899
         },
-        "prediction": 750000
+        "prediction": 268054.2156071439
     },
     {
-        "listing_id": "atl23456hjk78",
+        "listing_id": "mrd11295064",
+        "adress": "11000 e route 34 #2a, plano, il 60545",
+        "structure_yearbuilt": "2005.0",
+        "property_propertytype": "commercial sale",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 33.7490,
-            "longitude": -84.3880
+            "latitude": -88.49406917859972,
+            "longitude": 41.66207248006981
         },
-        "prediction": 395000
+        "prediction": 1027694.9425307028
     },
     {
-        "listing_id": "mia78901qwe23",
+        "listing_id": "mrd11296257",
+        "adress": "7853 43rd street, lyons, il 60534",
+        "structure_yearbuilt": "1930.0",
+        "property_propertytype": "commercial sale",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 25.7617,
-            "longitude": -80.1918
+            "latitude": -87.81772620843333,
+            "longitude": 41.81324182839308
         },
-        "prediction": 485000
+        "prediction": 651028.442095852
     },
     {
-        "listing_id": "aus34567rty56",
+        "listing_id": "mrd11325633",
+        "adress": "601 w fullerton #1, chicago, il 60614",
+        "structure_yearbuilt": "",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "3.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "3.0",
+        "structure_basement": "['partial']",
         "location": {
-            "latitude": 30.2672,
-            "longitude": -97.7431
+            "latitude": 41.9252586,
+            "longitude": -87.6442225
         },
-        "prediction": 525000
+        "prediction": 635609.5984188898
     },
     {
-        "listing_id": "sfo89012uio89",
+        "listing_id": "mrd11372731",
+        "adress": "1402 monterey pine drive, normal, il 61761",
+        "structure_yearbuilt": "2022.0",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "2.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "2.0",
+        "structure_basement": "['partial']",
         "location": {
-            "latitude": 37.7749,
-            "longitude": -122.4194
+            "latitude": -88.9651454727877,
+            "longitude": 40.53509771855528
         },
-        "prediction": 1350000
+        "prediction": 332243.62672123424
     },
     {
-        "listing_id": "por45678dfg12",
+        "listing_id": "mrd11425162",
+        "adress": "10011 main street, hebron, il 60034",
+        "structure_yearbuilt": "",
+        "property_propertytype": "business opportunity",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
         "location": {
-            "latitude": 45.5155,
-            "longitude": -122.6789
+            "latitude": -88.43283921194325,
+            "longitude": 42.47148955517912
         },
-        "prediction": 595000
+        "prediction": 473878.8410279792
     },
     {
-        "listing_id": "nas90123hjk45",
+        "listing_id": "mrd11429964",
+        "adress": "125 roman lane, hawthorn woods, il 60047",
+        "structure_yearbuilt": "2022.0",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "4.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "3.0",
+        "structure_basement": "['full']",
         "location": {
-            "latitude": 36.1627,
-            "longitude": -86.7816
+            "latitude": -88.05501855955009,
+            "longitude": 42.19830572813544
         },
-        "prediction": 375000
+        "prediction": 985778.286682917
     },
     {
-        "listing_id": "san56789qwe78",
+        "listing_id": "mrd11434159",
+        "adress": "1821 glenbridge road, bloomington, il 61704",
+        "structure_yearbuilt": "2022.0",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "2.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "2.0",
+        "structure_basement": "['full']",
         "location": {
-            "latitude": 32.7157,
-            "longitude": -117.1611
+            "latitude": -88.90726423445216,
+            "longitude": 40.4555150722104
         },
-        "prediction": 775000
+        "prediction": 65936.72834612455
     },
     {
-        "listing_id": "min12345rty01",
+        "listing_id": "mrd11434162",
+        "adress": "1819 glenbridge road, bloomington, il 61704",
+        "structure_yearbuilt": "2022.0",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "2.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "2.0",
+        "structure_basement": "['full']",
         "location": {
-            "latitude": 44.9778,
-            "longitude": -93.2650
+            "latitude": -88.90726507365792,
+            "longitude": 40.45554318569549
         },
-        "prediction": 425000
+        "prediction": 76609.24466402279
+    },
+    {
+        "listing_id": "mrd11461791",
+        "adress": "1356 w chestnut street #401, chicago, il 60642",
+        "structure_yearbuilt": "2022.0",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "3.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "3.0",
+        "structure_basement": "['none']",
+        "location": {
+            "latitude": -87.66141554880096,
+            "longitude": 41.89804443212182
+        },
+        "prediction": 970415.5207472688
+    },
+    {
+        "listing_id": "mrd11465979",
+        "adress": "000 s brookville road, polo, il 61064",
+        "structure_yearbuilt": "",
+        "property_propertytype": "farm",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
+        "location": {
+            "latitude": 41.9859347,
+            "longitude": -89.6842165
+        },
+        "prediction": 150481.1653110461
+    },
+    {
+        "listing_id": "mrd11615898",
+        "adress": "601 dewitt avenue, mattoon, il 61938",
+        "structure_yearbuilt": "1940.0",
+        "property_propertytype": "business opportunity",
+        "structure_bathroomsfull": "",
+        "structure_bathroomshalf": "",
+        "structure_bedroomstotal": "",
+        "structure_basement": "",
+        "location": {
+            "latitude": -88.36025050123999,
+            "longitude": 39.48896531109517
+        },
+        "prediction": 190706.0153864591
+    },
+    {
+        "listing_id": "mrd11621536",
+        "adress": "10959 s neenah avenue, worth, il 60482",
+        "structure_yearbuilt": "1988.0",
+        "property_propertytype": "residential",
+        "structure_bathroomsfull": "3.0",
+        "structure_bathroomshalf": "0.0",
+        "structure_bedroomstotal": "4.0",
+        "structure_basement": "['full']",
+        "location": {
+            "latitude": -87.78252116043438,
+            "longitude": 41.692562822228126
+        },
+        "prediction": 314994.683550336
     }
 ]

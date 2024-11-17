@@ -13,14 +13,23 @@ def string_to_list(input_string):
             return []
     return input_string
 
+
+def string_list_2(value):
+    if pd.isna(value):
+        return np.nan
+    elif isinstance(value, str):
+        return [value]
+    else:
+        return value
+    
+
 def one_hot_from_list(df, column_name):
     """Creates one-hot encoding for elements in a column of lists."""
     # Ensure all values in the column are lists
     df[column_name] = df[column_name].apply(lambda x: x if isinstance(x, list) else [])
-    
     # Extract unique elements across all lists
     unique_elements = set(element for lst in df[column_name] for element in lst)
-    
+    print(len(unique_elements))
     # Create one-hot encoded columns
     for element in unique_elements:
         one_hot_col_name = f"one_hot_{element}"
@@ -38,9 +47,11 @@ def save_dataset(df, filename):
 
 def preprocess_dataframe(df, config):
     """Preprocess the DataFrame by applying one-hot encoding."""
-    for col in config['columns_to_one_hot']:
-        print(df.columns)
+    for col in config['prepare']:
+        df[col] = df[col].apply(string_list_2)
+        print(df[col])
 
+    for col in config['columns_to_one_hot']:
         if col in df.columns:
             # Convert string representations of lists to actual lists
             df[col] = df[col].apply(string_to_list)
@@ -63,17 +74,22 @@ def main():
         # Load datasets
         df_test = pd.read_csv(test_file, sep=',', low_memory=False)
         df_train = pd.read_csv(train_file, sep=',', low_memory=False)
-
+        train_size = len(df_train)
+        test_size = len(df_test)
         # Config for preprocessing
         config = {
-            'columns_to_one_hot': ["Characteristics.LotFeatures"]
+            'prepare':["Tax.Zoning","Property.PropertyType"],
+            'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType"]
         }
-
+        df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
         # Preprocess and save datasets
-        df_train = preprocess_dataframe(df_train, config)
+        df_combined = preprocess_dataframe(df_combined, config)
+
+        df_train = df_combined.iloc[:train_size, :].reset_index(drop=True)
+        df_test = df_combined.iloc[train_size:, :].reset_index(drop=True)
+        print(len(df_train.columns))
+        print(len(df_test.columns))
         save_dataset(df_train, os.path.join(parent_dir, 'df_train.csv'))
-        
-        df_test = preprocess_dataframe(df_test, config)
         save_dataset(df_test, os.path.join(parent_dir, 'df_test.csv'))
 
     except Exception as e:

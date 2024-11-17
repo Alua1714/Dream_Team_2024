@@ -78,12 +78,13 @@ def main():
             "ImageData.style.exterior.summary.label", "Structure.Basement",
             "Structure.Cooling", "Structure.Heating", "Structure.ParkingFeatures",
             "UnitTypes.UnitTypeType", "Listing.ListingId", "Property.PropertyType",
-            "Tax.Zoning",
+            "Tax.Zoning","ImageData.style.exterior.summary.label",
         ],
         'date_columns': ["Listing.Dates.CloseDate"],
         'boolean_columns': ["Structure.NewConstructionYN"],
         'float_conversion_columns': ["ImageData.style.stories.summary.label"],
-        'columns_to_one_hot': ["Characteristics.LotFeatures"]
+        'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType"]
+
     }
 
     for df, df_name in dataframes:

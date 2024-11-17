@@ -115,7 +115,7 @@
 {#snippet houseCard(house)}
   <button
     onclick={() => selectLocation(house)}
-    class="w-full text-left rounded p-4 transition-all relative {selectedHouse?.listing_id === house.listing_id ? 'border-2 border-primary' : 'border'}"
+    class="w-full text-left rounded p-4 transition-all relative border {selectedHouse?.listing_id === house.listing_id ? "border-primary" : ""}"
   >
     <div>
       <h2>Id: {house.listing_id}</h2>
@@ -126,7 +126,7 @@
 {/snippet}
 
 {#if selectedHouse !== null}
-  <Card.Root class="absolute right-2 bottom-2 z-10 overflow-hidden shadow-2xl {selectedHouse === null ? 'hiden' : ''}">
+  <Card.Root class="absolute right-2 bottom-2 z-10 overflow-hidden shadow-2xl {selectedHouse === null ? "hiden" : ""}">
     <StreetviewEmbed />
     <Card.Header>
       <Card.Title>{selectedHouse?.listing_id}</Card.Title>

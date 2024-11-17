@@ -5,6 +5,9 @@
 
   import * as Card from "$lib/components/ui/card/index.js";
 
+  import MapPin from "lucide-svelte/icons/map-pin";
+
+
   import StreetviewEmbed from "$lib/components/StreetviewEmbed.svelte";
 
   import { map } from "$lib/state/map.svelte";
@@ -50,9 +53,16 @@
     if (selectedHouse?.listing_id === house.listing_id) {
       selectedHouse = null;
     } else {
-      map.setCoordinates(house.location.latitude, house.location.longitude);
+      map.setCoordinates(house.location.longitude, house.location.latitude);
       selectedHouse = house;
     }
+  }
+
+  function capitalizeWords(str: string) {
+    return str
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 </script>
 
@@ -115,13 +125,12 @@
 {#snippet houseCard(house)}
   <button
     onclick={() => selectLocation(house)}
-    class="w-full text-left rounded p-4 transition-all relative border {selectedHouse?.listing_id === house.listing_id ? "border-primary" : ""}"
+    class="w-full text-left rounded p-4 pt-8 transition-all relative border {selectedHouse?.listing_id === house.listing_id ? "border-primary" : ""}"
   >
-    <div>
-      <h2>Id: {house.listing_id}</h2>
-      <p>Price: {house.prediction}</p>
-    </div>
-    <span class="text-white text-xs bg-red-500 rounded-full px-2 absolute top-2 right-2">${house.prediction}</span>
+    <h2 class="font-semibold">{capitalizeWords(house.adress)}</h2>
+    <span class="text-white text-sm bg-red-500 rounded-full px-2 absolute top-2 left-2">
+      ${Math.round(house.prediction).toLocaleString()}
+    </span>
   </button>
 {/snippet}
 
@@ -129,13 +138,22 @@
   <Card.Root class="absolute right-2 bottom-2 z-10 overflow-hidden shadow-2xl {selectedHouse === null ? "hiden" : ""}">
     <StreetviewEmbed />
     <Card.Header>
-      <Card.Title>{selectedHouse?.listing_id}</Card.Title>
-      <Card.Description>
-        Upload a file containing the attributes of the houses
-      </Card.Description>
+      <span class="text-white text-lg bg-red-500 rounded-full px-2 absolute top-3 right-3 shadow-lg">
+        ${Math.round(selectedHouse?.prediction).toLocaleString()}
+      </span>
+      <Card.Title>{selectedHouse?.adress}</Card.Title>
     </Card.Header>
     <Card.Content>
-      <p>Price: {selectedHouse?.prediction}</p>
+      <div class="text-sm text-gray-500 mb-4 flex items-center">
+        <MapPin class="mr-2 h-4 w-4" />
+        <p>Lat: {selectedHouse?.location.latitude}, Lon: {selectedHouse?.location.longitude}</p>
+      </div>
+      {#if selectedHouse?.structure_yearbuilt}
+        <p>Year Built: {Math.round(selectedHouse.structure_yearbuilt)}</p>
+      {/if}
+      {#if selectedHouse?.property_propertytype}
+        <p>Type: {capitalizeWords(selectedHouse.property_propertytype)}</p>
+      {/if}
     </Card.Content>
   </Card.Root>
 {/if}

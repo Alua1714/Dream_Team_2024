@@ -223,9 +223,6 @@ class HousePricePredictor:
         # Convert date column to datetime
         df['Listing.Dates.CloseDate'] = pd.to_datetime(df['Listing.Dates.CloseDate'])
 
-        drop_col=['Structure.NewConstructionYN']
-        df = df.drop(drop_col, axis='columns')  
-
         X = df.drop('Listing.Price.ClosePrice', axis=1)
         y = df['Listing.Price.ClosePrice']
         return train_test_split(X, y, test_size=0.2, random_state=42)

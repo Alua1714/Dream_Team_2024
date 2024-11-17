@@ -63,37 +63,54 @@ def preprocess_dataframe(df, config):
             print(f"Column '{col}' not found in DataFrame. Skipping...")
     return df
 
+def encode(data, col, max_val):
+    data[col + '_sin'] = np.sin(2 * np.pi * data[col]/max_val)
+    data[col + '_cos'] = np.cos(2 * np.pi * data[col]/max_val)
+    return data
+
 def main():
     """Main execution function."""
-    try:
-        # Define file paths
-        parent_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
-        test_file = os.path.join(parent_dir, 'test_imputed.csv')
-        train_file = os.path.join(parent_dir, 'train_imputed.csv')
+    
+    # Define file paths
+    parent_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'dataset'))
+    test_file = os.path.join(parent_dir, 'test_imputed.csv')
+    train_file = os.path.join(parent_dir, 'train_imputed.csv')
 
-        # Load datasets
-        df_test = pd.read_csv(test_file, sep=',', low_memory=False)
-        df_train = pd.read_csv(train_file, sep=',', low_memory=False)
-        train_size = len(df_train)
-        test_size = len(df_test)
-        # Config for preprocessing
-        config = {
-            'prepare':["Tax.Zoning","Property.PropertyType"],
-            'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
-        }
-        df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
-        # Preprocess and save datasets
-        df_combined = preprocess_dataframe(df_combined, config)
+    # Load datasets
+    df_test = pd.read_csv(test_file, sep=',', low_memory=False)
+    df_train = pd.read_csv(train_file, sep=',', low_memory=False)
+    train_size = len(df_train)
+    test_size = len(df_test)
+    # Config for preprocessing
+    config = {
+        'prepare':["Tax.Zoning","Property.PropertyType"],
+        'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
+    }
+    df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
+    # Preprocess and save datasets
+    # Ensure 'month' is the numeric month value
+    df_combined = preprocess_dataframe(df_combined,config)
+    df_combined['Listing.Dates.CloseDate'] = pd.to_datetime(df_combined['Listing.Dates.CloseDate'], errors='coerce')
 
-        df_train = df_combined.iloc[:train_size, :].reset_index(drop=True)
-        df_test = df_combined.iloc[train_size:, :].reset_index(drop=True)
-        print(len(df_train.columns))
-        print(len(df_test.columns))
-        save_dataset(df_train, os.path.join(parent_dir, 'df_train.csv'))
-        save_dataset(df_test, os.path.join(parent_dir, 'df_test.csv'))
+# Extract month and encode it
+    df_combined['month'] = df_combined['Listing.Dates.CloseDate'].dt.month
+    df_combined = encode(df_combined, 'month', 12)
 
-    except Exception as e:
-        print(f"Error in main execution: {e}")
+    # Extract day and encode it
+    df_combined['day'] = df_combined['Listing.Dates.CloseDate'].dt.day
+    df_combined = encode(df_combined, 'day', 31)
+    df_combined.drop(columns=['month','day'],inplace=True, errors='ignore')
+    
+    df_train = df_combined.iloc[:train_size, :].reset_index(drop=True)
+    df_test = df_combined.iloc[train_size:, :].reset_index(drop=True)
+    print(list(df_train.columns))
+    print(len(df_test.columns))
+
+
+
+    save_dataset(df_train, os.path.join(parent_dir, 'df_train.csv'))
+    save_dataset(df_test, os.path.join(parent_dir, 'df_test.csv'))
+
 
 if __name__ == "__main__":
     main()

@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics.pairwise import nan_euclidean_distances
 import os
-
+import pickle
 
 class HybridImputer:
     """
@@ -168,13 +168,13 @@ def setup_paths():
     """Setup and return all necessary paths."""
     # Get directory containing current script
     script_dir = Path(__file__).parent
-    modified_dir = script_dir / 'data'
+    modified_dir = script_dir / '../dataset'
     modified_dir.mkdir(exist_ok=True)
     
     return {
         'test': modified_dir / 'test_modified.csv',
-        'train': modified_dir / 'train_modified.csv',
-        'modified': modified_dir
+        'train': modified_dir / 'df_del_train.csv',
+        'modified': script_dir / 'data'
     }
 
 
@@ -315,19 +315,16 @@ def string_list_2(value):
         return value
     
 
-def one_hot_from_list(df, column_name):
+def one_hot_from_list(df, column_name, unique_elements):
     """Creates one-hot encoding for elements in a column of lists."""
     # Ensure all values in the column are lists
     df[column_name] = df[column_name].apply(lambda x: x if isinstance(x, list) else [])
     # Extract unique elements across all lists
-    unique_elements = set(element for lst in df[column_name] for element in lst)
-    print(len(unique_elements))
-    # Create one-hot encoded columns
     for element in unique_elements:
         new_el = element.replace(" ", "_")
         one_hot_col_name = f"one_hot_{new_el}"
         df[one_hot_col_name] = df[column_name].apply(lambda lst: 1 if element in lst else 0)
-    
+    print(len(df), "AFTER ONE HOT")
     return df
 
 def save_dataset(df, filename):
@@ -338,7 +335,7 @@ def save_dataset(df, filename):
     except Exception as e:
         print(f"Error saving dataset to {filename}: {e}")
 
-def preprocess_dataframe2(df, config):
+def preprocess_dataframe2(df, config, uniques):
     """Preprocess the DataFrame by applying one-hot encoding."""
     for col in config['prepare']:
         df[col] = df[col].apply(string_list_2)
@@ -348,7 +345,7 @@ def preprocess_dataframe2(df, config):
             # Convert string representations of lists to actual lists
             df[col] = df[col].apply(string_to_list)
             # Apply one-hot encoding
-            df = one_hot_from_list(df, col)
+            df = one_hot_from_list(df, col,uniques[col])
             # Drop the original column
             df.drop(columns=col, inplace=True, errors='ignore')
         else:
@@ -359,7 +356,14 @@ def encode(data, col, max_val):
     data[col + '_sin'] = np.sin(2 * np.pi * data[col]/max_val)
     data[col + '_cos'] = np.cos(2 * np.pi * data[col]/max_val)
     return data
+def load_dictionary(path):
 
+    try:
+        with open(path, 'rb') as file:
+            return pickle.load(file)
+    except Exception as e:
+        raise Exception(f"An error occurred while loading the dictionary: {e}")
+    
 def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
     # Setup paths
 
@@ -372,10 +376,8 @@ def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
         
         logging.info("Processing train dataset...")
         df_train = pd.read_csv(paths['train'], low_memory=False)
-        df_train = clean_dataframe(df_train)
         
         logging.info("Modified datasets have been saved successfully.")
-        dataframes = [(df_train, 'df_del_train'), (df_test, 'df_del_test')]
 
         config = {
             'columns_to_drop': [
@@ -391,9 +393,8 @@ def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
             'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
         }
 
-        df_train = preprocess_dataframe(df_train, config)
         df_test = preprocess_dataframe(df_test, config)
-
+        
         ##IMPUTE VALUES
         train_size = len(df_train)
         test_size = len(df_test)
@@ -405,8 +406,8 @@ def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
 
         safed_cols = df_combined[drop_but_safe]
         df_combined.drop(columns=drop_but_safe, inplace=True, errors='ignore')
-
-
+        
+        
         #df_combined.to_csv('df_combined.csv', index=False)
 
         imputer = HybridImputer(
@@ -423,32 +424,28 @@ def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
         df_test = imputed_data.iloc[train_size:, :].reset_index(drop=True)
 
         #ONE HOT
-
-
+        uniques = load_dictionary(os.path.join(paths['modified'],"saved_data.pkl"))
         train_size = len(df_train)
-        test_size = len(df_test)
         # Config for preprocessing
         config2 = {
             'prepare':["Tax.Zoning","Property.PropertyType"],
             'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
         }
-        df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
-        # Preprocess and save datasets
+
         # Ensure 'month' is the numeric month value
-        df_combined = preprocess_dataframe2(df_combined,config2)
-        df_combined['Listing.Dates.CloseDate'] = pd.to_datetime(df_combined['Listing.Dates.CloseDate'], errors='coerce')
+        df_test = preprocess_dataframe2(df_test,config2,uniques)
+        #AQUí ENCARA SENCER
+            
+        df_test['Listing.Dates.CloseDate'] = pd.to_datetime(df_test['Listing.Dates.CloseDate'], errors='coerce')
 
     # Extract month and encode it
-        df_combined['month'] = df_combined['Listing.Dates.CloseDate'].dt.month
-        df_combined = encode(df_combined, 'month', 12)
+        df_test['month'] = df_test['Listing.Dates.CloseDate'].dt.month
+        df_test = encode(df_test, 'month', 12)
 
         # Extract day and encode it
-        df_combined['day'] = df_combined['Listing.Dates.CloseDate'].dt.day
-        df_combined = encode(df_combined, 'day', 31)
-        df_combined.drop(columns=['month','day'],inplace=True, errors='ignore')
-        
-        df_test = df_combined.iloc[train_size:, :].reset_index(drop=True)
-
+        df_test['day'] = df_test['Listing.Dates.CloseDate'].dt.day
+        df_test = encode(df_test, 'day', 31)
+        df_test.drop(columns=['month','day'],inplace=True, errors='ignore')
 
         df_test.drop(["Listing.Price.ClosePrice", "Listing.Dates.CloseDate"], axis=1, inplace=True)
         return df_test
@@ -458,3 +455,6 @@ def process_data(df_test: pd.DataFrame) -> pd.DataFrame:
         raise
 
 
+df_test = pd.read_csv(Path("C:/Users/eloip/Documents/datathon_2024/Dream_Team_2024/dataset/test_modified.csv"))
+df_final = process_data(df_test)    
+df_final.to_csv('data.csv', index=False)

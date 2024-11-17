@@ -3,7 +3,7 @@
         "listing_id": "4yiu32y4iu423",
         "location": {
             "latitude": 37.77494324,
-            "Longitude": -122.4194434
+            "longitude": -122.4194434
         },
         "prediction": 100000
     },
@@ -11,7 +11,7 @@
         "listing_id": "34235532564re",
         "location": {
             "latitude": 47.77494324,
-            "Longitude": -152.4194434
+            "longitude": -152.4194434
         },
         "prediction": 150000
     }

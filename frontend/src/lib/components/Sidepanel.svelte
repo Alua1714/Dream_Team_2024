@@ -4,9 +4,7 @@
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
 
   import * as Card from "$lib/components/ui/card/index.js";
-
   import MapPin from "lucide-svelte/icons/map-pin";
-
 
   import StreetviewEmbed from "$lib/components/StreetviewEmbed.svelte";
 
@@ -36,6 +34,7 @@
 
       const data = await response.json();
       results = data;
+      selectLocation(results[0])
       // success
     } catch (error) {
       // error
@@ -129,7 +128,7 @@
     {selectedHouse?.listing_id === house.listing_id ? "border-primary shadow" : ""}"
   >
     <div class="flex items-center gap-3">
-      <MapPin class="h-6 w-6 text-primary" />
+      <MapPin class="h-5 w-5 text-primary" />
       <h2 class="font-medium text-gray-900">
         {capitalizeWords(house.adress)}
       </h2>

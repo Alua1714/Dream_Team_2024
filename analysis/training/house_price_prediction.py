@@ -36,26 +36,64 @@ class BaseModel(ABC):
         """Get model name for logging"""
         pass
 
-class LightGBMModel(BaseModel):
-    """LightGBM model implementation"""
+class EnsembleLightGBMModel(BaseModel):
+    """Ensemble of LightGBM models with different parameters and weighted averaging"""
     
-    def __init__(self, params: Dict[str, Any]):
-        self.model = LGBMRegressor(**params)
-        self.params = params
+    def __init__(self, model_configs: List[Dict[str, Any]], weights: List[float] = None):
+        """
+        Initialize ensemble with multiple model configurations
+        
+        Args:
+            model_configs: List of dictionaries containing parameters for each model
+            weights: List of weights for ensemble averaging. Must sum to 1.
+        """
+        if weights is None:
+            self.weights = [1/len(model_configs)] * len(model_configs)
+        else:
+            if len(weights) != len(model_configs):
+                raise ValueError("Number of weights must match number of models")
+            if abs(sum(weights) - 1.0) > 1e-5:
+                raise ValueError("Weights must sum to 1")
+            self.weights = weights
+            
+        self.models = [LGBMRegressor(**config) for config in model_configs]
+        self.feature_importances_ = None
+        self.feature_name_ = None
     
     def train(self, X_train: pd.DataFrame, y_train: pd.Series) -> None:
-        self.model.fit(X_train, y_train, feature_name=X_train.columns.tolist())
-        y = self.model.predict(X_train)
-        print(f'Difference between output trained data and target: {mean_absolute_error(y_train,y)}')
+        """Train all models in the ensemble"""
+        self.feature_name_ = X_train.columns.tolist()
+        
+        print("\nTraining Ensemble Models:")
+        for i, model in enumerate(self.models, 1):
+            print(f"\nTraining Model {i} (Weight: {self.weights[i-1]:.2f})")
+            model.fit(X_train, y_train, feature_name=self.feature_name_)
+            
+            # Calculate training metrics for each model
+            y_pred = model.predict(X_train)
+            mae = mean_absolute_error(y_train, y_pred)
+            print(f'Model {i} Training MAE: ${mae:,.2f}')
+        
+        # Combine feature importances with weights
+        self.feature_importances_ = np.zeros(len(self.feature_name_))
+        for model, weight in zip(self.models, self.weights):
+            self.feature_importances_ += weight * model.feature_importances_
     
     def predict(self, X: pd.DataFrame) -> np.ndarray:
-        return self.model.predict(X)
+        """Make weighted predictions using all models"""
+        predictions = np.zeros(len(X))
+        for model, weight in zip(self.models, self.weights):
+            predictions += weight * model.predict(X)
+        return predictions
     
     def get_model_name(self) -> str:
-        return "LightGBM"
+        return "EnsembleLightGBM"
     
     def get_feature_importance(self) -> Dict[str, float]:
-        return dict(zip(self.model.feature_name_, self.model.feature_importances_))
+        """Get weighted feature importance across all models"""
+        if self.feature_importances_ is None or self.feature_name_ is None:
+            raise ValueError("Model must be trained before getting feature importance")
+        return dict(zip(self.feature_name_, self.feature_importances_))
 
 class TimeSeriesCV:
     """Time series cross-validation with expanding window"""
@@ -374,7 +412,6 @@ class HousePricePredictor:
     
 
 
-    
     def show_rellevant_features(self, data):
         categories = list(data.keys())
         values = list(data.values())
@@ -430,6 +467,7 @@ def create_engineered_features(df):
     return df
 
 
+
 def generate_predictions_file(
     model,                    # Your trained LightGBM model
     validation_df,           # Validation DataFrame without target
@@ -473,6 +511,56 @@ def generate_predictions_file(
         raise
 
 
+def get_ensemble_configs():
+    # Model 1: Focused on deep relationships with more trees and depth
+    deep_model_params = {
+        "n_estimators": 200,
+        "max_depth": 12,
+        "num_leaves": 100,
+        "learning_rate": 0.05,
+        "min_child_samples": 20,
+        "min_split_gain": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "random_state": 42,
+        "verbose": -1
+    }
+    
+    # Model 2: Focused on preventing overfitting with regularization
+    robust_model_params = {
+        "n_estimators": 150,
+        "max_depth": 8,
+        "num_leaves": 50,
+        "learning_rate": 0.1,
+        "min_child_samples": 30,
+        "min_split_gain": 0.1,
+        "reg_alpha": 0.1,
+        "reg_lambda": 0.1,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7,
+        "random_state": 43,
+        "verbose": -1
+    }
+    
+    # Model 3: Focused on local patterns with smaller trees but more of them
+    local_model_params = {
+        "n_estimators": 300,
+        "max_depth": 6,
+        "num_leaves": 32,
+        "learning_rate": 0.03,
+        "min_child_samples": 10,
+        "min_split_gain": 0.01,
+        "subsample": 0.9,
+        "colsample_bytree": 0.9,
+        "random_state": 44,
+        "verbose": -1
+    }
+    
+    return [deep_model_params, robust_model_params, local_model_params]
+
+def get_ensemble_weights():
+    return [0.4, 0.3, 0.3]  # Giving slightly more weight to the deep model
+
 
 def main():
     # Clear existing mlruns directory if it exists (optional, remove if you want to keep history)
@@ -484,33 +572,22 @@ def main():
     parent_dir = os.path.abspath(os.path.join(os.getcwd(), 'dataset'))
     train_file = os.path.abspath(os.path.join(parent_dir, 'df_train.csv'))
     
-    # Initialize model with parameters
-    lgb_params = {
-        "n_estimators": 100,
-        "max_depth": 10,
-        "num_leaves": 31,
-        "learning_rate": 0.1,
-        "min_child_samples": 10,
-        "min_split_gain": 0.1,
-        "random_state": 42,
-        "verbose": -1
-    }
-
-
-    model = LightGBMModel(lgb_params)
-    
+    model_configs = get_ensemble_configs()
+    weights = get_ensemble_weights()
+    model = EnsembleLightGBMModel(model_configs, weights)
 
     # Initialize predictor with experiment name
     predictor = HousePricePredictor(model, "house_price_experiment")
     predictor.cv = TimeSeriesCV(min_training_months=3, forecast_months=1)
     
     # Print starting message
-    print("\nStarting House Price Prediction")
+    print("\nStarting House Price Prediction with Ensemble Model")
     print("="*50)
-    print("Model Parameters:")
-    for param, value in lgb_params.items():
-        print(f"{param}: {value}")
-    
+    print("Ensemble Configuration:")
+    for i, config in enumerate(model_configs, 1):
+        print(f"\nModel {i} Parameters (Weight: {weights[i-1]:.2f}):")
+        for param, value in config.items():
+            print(f"{param}: {value}")
     # Prepare data
     X_train, X_test, y_train, y_test = predictor.prepare_data(train_file)
     

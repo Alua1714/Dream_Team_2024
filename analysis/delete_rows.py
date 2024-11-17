@@ -83,8 +83,7 @@ def main():
         'date_columns': ["Listing.Dates.CloseDate"],
         'boolean_columns': ["Structure.NewConstructionYN"],
         'float_conversion_columns': ["ImageData.style.stories.summary.label"],
-        'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType"]
-
+        'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
     }
 
     for df, df_name in dataframes:

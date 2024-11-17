@@ -179,7 +179,7 @@ df_train_recovered = imputed_data.iloc[:train_size, :].reset_index(drop=True)
 df_test_recovered = imputed_data.iloc[train_size:, :].reset_index(drop=True)
 
 output_path_train = os.path.abspath(os.path.join(parent_dir, f'train_imputed.csv'))
-output_path_test = os.path.abspath(os.path.join(parent_dir, f'train_imputed.csv'))
+output_path_test = os.path.abspath(os.path.join(parent_dir, f'test_imputed.csv'))
 
 df_train_recovered.to_csv(output_path_train, index=False)
 df_test_recovered.to_csv(output_path_test, index=False)

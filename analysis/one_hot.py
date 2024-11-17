@@ -49,7 +49,6 @@ def preprocess_dataframe(df, config):
     """Preprocess the DataFrame by applying one-hot encoding."""
     for col in config['prepare']:
         df[col] = df[col].apply(string_list_2)
-        print(df[col])
 
     for col in config['columns_to_one_hot']:
         if col in df.columns:
@@ -79,7 +78,7 @@ def main():
         # Config for preprocessing
         config = {
             'prepare':["Tax.Zoning","Property.PropertyType"],
-            'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType"]
+            'columns_to_one_hot': ["Characteristics.LotFeatures","Structure.Cooling","Tax.Zoning","Property.PropertyType","ImageData.features_reso.results","ImageData.room_type_reso.results"]
         }
         df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
         # Preprocess and save datasets

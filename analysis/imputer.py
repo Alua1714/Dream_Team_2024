@@ -161,7 +161,8 @@ test_size = len(df_test)
 
 df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
 drop_but_safe = ["Listing.Dates.CloseDate","Characteristics.LotFeatures",
-                 "Structure.Cooling","Tax.Zoning","Property.PropertyType"]
+                 "Structure.Cooling","Tax.Zoning","Property.PropertyType",
+                 "ImageData.features_reso.results","ImageData.room_type_reso.results"]
 
 safed_cols = df_combined[drop_but_safe]
 df_combined.drop(columns=drop_but_safe, inplace=True, errors='ignore')

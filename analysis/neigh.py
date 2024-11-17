@@ -160,8 +160,11 @@ train_size = len(df_train)
 test_size = len(df_test)
 
 df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
-columns_to_one_hot = ["Characteristics.LotFeatures","Listing.Dates.CloseDate"]
+drop_but_safe = ["Listing.Dates.CloseDate"]
+safed_cols = df_combined[drop_but_safe]
+columns_to_one_hot = ["Characteristics.LotFeatures"]
 df_combined.drop(columns=columns_to_one_hot, inplace=True, errors='ignore')
+df_combined.drop(columns=drop_but_safe, inplace=True, errors='ignore')
 
 
 #df_combined.to_csv('df_combined.csv', index=False)
@@ -175,11 +178,12 @@ imputer = HybridImputer(
 # Impute missing values
 cols_impute = list(df_combined.columns)
 imputed_data = imputer.fit_transform(df_combined, columns_to_impute=cols_impute)
+imputed_data[drop_but_safe] = safed_cols
 df_train_recovered = imputed_data.iloc[:train_size, :].reset_index(drop=True)
 df_test_recovered = imputed_data.iloc[train_size:, :].reset_index(drop=True)
 
 output_path_train = os.path.abspath(os.path.join(parent_dir, f'train_imputed.csv'))
-output_path_test = os.path.abspath(os.path.join(parent_dir, f'train_imputed.csv'))
+output_path_test = os.path.abspath(os.path.join(parent_dir, f'test_imputed.csv'))
 
 df_train_recovered.to_csv(output_path_train, index=False)
 df_test_recovered.to_csv(output_path_test, index=False)

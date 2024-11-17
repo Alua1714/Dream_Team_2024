@@ -160,10 +160,8 @@ train_size = len(df_train)
 test_size = len(df_test)
 
 df_combined = pd.concat([df_train, df_test], axis=0, ignore_index=True)
-drop_but_safe = ["Listing.Dates.CloseDate"]
+drop_but_safe = ["Listing.Dates.CloseDate","Characteristics.LotFeatures"]
 safed_cols = df_combined[drop_but_safe]
-columns_to_one_hot = ["Characteristics.LotFeatures"]
-df_combined.drop(columns=columns_to_one_hot, inplace=True, errors='ignore')
 df_combined.drop(columns=drop_but_safe, inplace=True, errors='ignore')
 
 

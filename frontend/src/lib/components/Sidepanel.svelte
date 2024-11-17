@@ -100,12 +100,14 @@
 {#snippet houseCard(house)}
 <button 
   onclick={() => selectLocation(house)} 
-  class="w-full text-left rounded p-4 transition-all {selectedHouse?.listing_id === house.listing_id ? "border-2 border-primary" : "border"} "
+  class="w-full text-left rounded p-4 transition-all relative {selectedHouse?.listing_id === house.listing_id ? "border-2 border-primary" : "border"} "
 >
   <div>
     <h2>Id: {house.listing_id}</h2>
     <p>Price: {house.prediction}</p>
-    <InfoDialog />
+    <div class="absolute right-3 top-3">
+        <InfoDialog house={house} />
+    </div>
   </div>
 </button>
 {/snippet}

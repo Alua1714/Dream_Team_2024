@@ -6,6 +6,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173",
+    "http://localhost:4173",
     "https://datathon.container.aed.cat",
 ]
 
@@ -24,6 +25,6 @@ async def health_check():
 @app.post("/upload/")
 async def upload_file(file: UploadFile):
     path = "./response.json"
-    with open(path, 'r') as file:
+    with open(path, "r") as file:
         response = json.load(file)
     return response
